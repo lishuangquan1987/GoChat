@@ -22,12 +22,12 @@
 
 <img title="" src="./img/client1-client2.png" alt="loading-ag-83" data-align="inline" style="zoom:100%;">
 
-![loading-ag-88](/img/client1-client2-2.png)
+![loading-ag-88](./img/client1-client2-2.png)
 
 对方不在线：
 
-![loading-ag-93](/img/client1-client2-offline.png)
+![loading-ag-93](./img/client1-client2-offline.png)
 
-![loading-ag-100](/img/client1-client2-2-offline.png)
+![loading-ag-100](./img/client1-client2-2-offline.png)
 
 ### 群聊
