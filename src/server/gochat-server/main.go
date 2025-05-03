@@ -1,7 +1,16 @@
 package main
 
-import "fmt"
+import (
+	wsmanager "gochat-server/ws_manager"
+
+	"github.com/gin-gonic/gin"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	r := gin.Default()
+	r.GET("/ws", func(c *gin.Context) {
+		// 处理 WebSocket 连接
+		wsmanager.HandleWebSocketConnection(c.Writer, c.Request)
+	})
+	
 }
