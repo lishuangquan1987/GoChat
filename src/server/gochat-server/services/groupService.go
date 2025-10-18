@@ -138,6 +138,9 @@ func AddGroupMembers(groupId int, userIds []int) error {
 		return errors.New("添加群成员失败")
 	}
 
+	// 使群成员缓存失效
+	_ = InvalidateGroupMembersCache(groupId)
+
 	return nil
 }
 
@@ -178,11 +181,20 @@ func RemoveGroupMember(groupId, userId int) error {
 		return errors.New("移除群成员失败")
 	}
 
+	// 使群成员缓存失效
+	_ = InvalidateGroupMembersCache(groupId)
+
 	return nil
 }
 
-// GetGroupMembers 获取群成员列表
+// GetGroupMembers 获取群成员列表（带缓存）
 func GetGroupMembers(groupId int) ([]*ent.User, error) {
+	// 尝试从缓存获取
+	members, found := GetCachedGroupMembers(groupId)
+	if found {
+		return members, nil
+	}
+
 	// 获取群组
 	g, err := db.Group.Get(context.TODO(), groupId)
 	if err != nil {
@@ -190,7 +202,7 @@ func GetGroupMembers(groupId int) ([]*ent.User, error) {
 	}
 
 	// 查询所有成员信息
-	members := make([]*ent.User, 0, len(g.Members))
+	members = make([]*ent.User, 0, len(g.Members))
 	for _, memberId := range g.Members {
 		user, err := db.User.Get(context.TODO(), memberId)
 		if err != nil {
@@ -198,6 +210,9 @@ func GetGroupMembers(groupId int) ([]*ent.User, error) {
 		}
 		members = append(members, user)
 	}
+
+	// 写入缓存
+	_ = CacheGroupMembers(groupId, members)
 
 	return members, nil
 }

@@ -6,23 +6,42 @@ import (
 	"log"
 	"net/http"
 	"runtime/debug"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-// RecoveryMiddleware 恢复中间件，捕获panic
+// RecoveryMiddleware 恢复中间件，捕获panic并记录详细信息
 func RecoveryMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {
-				// 打印错误堆栈
-				log.Printf("Panic recovered: %v\n%s", err, debug.Stack())
+				// 记录panic发生的时间
+				timestamp := time.Now().Format("2006/01/02 15:04:05")
+
+				// 获取堆栈信息
+				stack := debug.Stack()
+
+				// 记录详细的panic信息
+				log.Printf("[PANIC RECOVERED] %s\n", timestamp)
+				log.Printf("Request: %s %s\n", c.Request.Method, c.Request.RequestURI)
+				log.Printf("Client IP: %s\n", c.ClientIP())
+				log.Printf("User-Agent: %s\n", c.Request.UserAgent())
+				log.Printf("Error: %v\n", err)
+				log.Printf("Stack Trace:\n%s\n", stack)
+
+				// 构建错误响应
+				errorMsg := "服务器内部错误"
+				errorDetail := fmt.Sprintf("%v", err)
 
 				// 返回统一错误响应
-				c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-					Code:    500,
-					Message: fmt.Sprintf("服务器内部错误: %v", err),
-				})
+				c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(
+					dto.CodeInternalError,
+					errorMsg,
+					fmt.Errorf("%s", errorDetail),
+				))
+
+				// 终止后续处理
 				c.Abort()
 			}
 		}()

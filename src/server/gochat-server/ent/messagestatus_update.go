@@ -28,71 +28,119 @@ func (msu *MessageStatusUpdate) Where(ps ...predicate.MessageStatus) *MessageSta
 	return msu
 }
 
-// SetChatRecordId sets the "chatRecordId" field.
-func (msu *MessageStatusUpdate) SetChatRecordId(i int) *MessageStatusUpdate {
-	msu.mutation.ResetChatRecordId()
-	msu.mutation.SetChatRecordId(i)
+// SetMsgId sets the "msgId" field.
+func (msu *MessageStatusUpdate) SetMsgId(s string) *MessageStatusUpdate {
+	msu.mutation.SetMsgId(s)
 	return msu
 }
 
-// SetNillableChatRecordId sets the "chatRecordId" field if the given value is not nil.
-func (msu *MessageStatusUpdate) SetNillableChatRecordId(i *int) *MessageStatusUpdate {
+// SetNillableMsgId sets the "msgId" field if the given value is not nil.
+func (msu *MessageStatusUpdate) SetNillableMsgId(s *string) *MessageStatusUpdate {
+	if s != nil {
+		msu.SetMsgId(*s)
+	}
+	return msu
+}
+
+// SetUserId sets the "userId" field.
+func (msu *MessageStatusUpdate) SetUserId(i int) *MessageStatusUpdate {
+	msu.mutation.ResetUserId()
+	msu.mutation.SetUserId(i)
+	return msu
+}
+
+// SetNillableUserId sets the "userId" field if the given value is not nil.
+func (msu *MessageStatusUpdate) SetNillableUserId(i *int) *MessageStatusUpdate {
 	if i != nil {
-		msu.SetChatRecordId(*i)
+		msu.SetUserId(*i)
 	}
 	return msu
 }
 
-// AddChatRecordId adds i to the "chatRecordId" field.
-func (msu *MessageStatusUpdate) AddChatRecordId(i int) *MessageStatusUpdate {
-	msu.mutation.AddChatRecordId(i)
+// AddUserId adds i to the "userId" field.
+func (msu *MessageStatusUpdate) AddUserId(i int) *MessageStatusUpdate {
+	msu.mutation.AddUserId(i)
 	return msu
 }
 
-// SetStatus sets the "status" field.
-func (msu *MessageStatusUpdate) SetStatus(s string) *MessageStatusUpdate {
-	msu.mutation.SetStatus(s)
+// SetIsDelivered sets the "isDelivered" field.
+func (msu *MessageStatusUpdate) SetIsDelivered(b bool) *MessageStatusUpdate {
+	msu.mutation.SetIsDelivered(b)
 	return msu
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (msu *MessageStatusUpdate) SetNillableStatus(s *string) *MessageStatusUpdate {
-	if s != nil {
-		msu.SetStatus(*s)
+// SetNillableIsDelivered sets the "isDelivered" field if the given value is not nil.
+func (msu *MessageStatusUpdate) SetNillableIsDelivered(b *bool) *MessageStatusUpdate {
+	if b != nil {
+		msu.SetIsDelivered(*b)
 	}
 	return msu
 }
 
-// SetFailReason sets the "failReason" field.
-func (msu *MessageStatusUpdate) SetFailReason(s string) *MessageStatusUpdate {
-	msu.mutation.SetFailReason(s)
+// SetIsRead sets the "isRead" field.
+func (msu *MessageStatusUpdate) SetIsRead(b bool) *MessageStatusUpdate {
+	msu.mutation.SetIsRead(b)
 	return msu
 }
 
-// SetNillableFailReason sets the "failReason" field if the given value is not nil.
-func (msu *MessageStatusUpdate) SetNillableFailReason(s *string) *MessageStatusUpdate {
-	if s != nil {
-		msu.SetFailReason(*s)
+// SetNillableIsRead sets the "isRead" field if the given value is not nil.
+func (msu *MessageStatusUpdate) SetNillableIsRead(b *bool) *MessageStatusUpdate {
+	if b != nil {
+		msu.SetIsRead(*b)
 	}
 	return msu
 }
 
-// ClearFailReason clears the value of the "failReason" field.
-func (msu *MessageStatusUpdate) ClearFailReason() *MessageStatusUpdate {
-	msu.mutation.ClearFailReason()
+// SetDeliveredTime sets the "deliveredTime" field.
+func (msu *MessageStatusUpdate) SetDeliveredTime(t time.Time) *MessageStatusUpdate {
+	msu.mutation.SetDeliveredTime(t)
 	return msu
 }
 
-// SetUpdateTime sets the "updateTime" field.
-func (msu *MessageStatusUpdate) SetUpdateTime(t time.Time) *MessageStatusUpdate {
-	msu.mutation.SetUpdateTime(t)
-	return msu
-}
-
-// SetNillableUpdateTime sets the "updateTime" field if the given value is not nil.
-func (msu *MessageStatusUpdate) SetNillableUpdateTime(t *time.Time) *MessageStatusUpdate {
+// SetNillableDeliveredTime sets the "deliveredTime" field if the given value is not nil.
+func (msu *MessageStatusUpdate) SetNillableDeliveredTime(t *time.Time) *MessageStatusUpdate {
 	if t != nil {
-		msu.SetUpdateTime(*t)
+		msu.SetDeliveredTime(*t)
+	}
+	return msu
+}
+
+// ClearDeliveredTime clears the value of the "deliveredTime" field.
+func (msu *MessageStatusUpdate) ClearDeliveredTime() *MessageStatusUpdate {
+	msu.mutation.ClearDeliveredTime()
+	return msu
+}
+
+// SetReadTime sets the "readTime" field.
+func (msu *MessageStatusUpdate) SetReadTime(t time.Time) *MessageStatusUpdate {
+	msu.mutation.SetReadTime(t)
+	return msu
+}
+
+// SetNillableReadTime sets the "readTime" field if the given value is not nil.
+func (msu *MessageStatusUpdate) SetNillableReadTime(t *time.Time) *MessageStatusUpdate {
+	if t != nil {
+		msu.SetReadTime(*t)
+	}
+	return msu
+}
+
+// ClearReadTime clears the value of the "readTime" field.
+func (msu *MessageStatusUpdate) ClearReadTime() *MessageStatusUpdate {
+	msu.mutation.ClearReadTime()
+	return msu
+}
+
+// SetCreateTime sets the "createTime" field.
+func (msu *MessageStatusUpdate) SetCreateTime(t time.Time) *MessageStatusUpdate {
+	msu.mutation.SetCreateTime(t)
+	return msu
+}
+
+// SetNillableCreateTime sets the "createTime" field if the given value is not nil.
+func (msu *MessageStatusUpdate) SetNillableCreateTime(t *time.Time) *MessageStatusUpdate {
+	if t != nil {
+		msu.SetCreateTime(*t)
 	}
 	return msu
 }
@@ -131,9 +179,9 @@ func (msu *MessageStatusUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (msu *MessageStatusUpdate) check() error {
-	if v, ok := msu.mutation.Status(); ok {
-		if err := messagestatus.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "MessageStatus.status": %w`, err)}
+	if v, ok := msu.mutation.MsgId(); ok {
+		if err := messagestatus.MsgIdValidator(v); err != nil {
+			return &ValidationError{Name: "msgId", err: fmt.Errorf(`ent: validator failed for field "MessageStatus.msgId": %w`, err)}
 		}
 	}
 	return nil
@@ -151,23 +199,35 @@ func (msu *MessageStatusUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			}
 		}
 	}
-	if value, ok := msu.mutation.ChatRecordId(); ok {
-		_spec.SetField(messagestatus.FieldChatRecordId, field.TypeInt, value)
+	if value, ok := msu.mutation.MsgId(); ok {
+		_spec.SetField(messagestatus.FieldMsgId, field.TypeString, value)
 	}
-	if value, ok := msu.mutation.AddedChatRecordId(); ok {
-		_spec.AddField(messagestatus.FieldChatRecordId, field.TypeInt, value)
+	if value, ok := msu.mutation.UserId(); ok {
+		_spec.SetField(messagestatus.FieldUserId, field.TypeInt, value)
 	}
-	if value, ok := msu.mutation.Status(); ok {
-		_spec.SetField(messagestatus.FieldStatus, field.TypeString, value)
+	if value, ok := msu.mutation.AddedUserId(); ok {
+		_spec.AddField(messagestatus.FieldUserId, field.TypeInt, value)
 	}
-	if value, ok := msu.mutation.FailReason(); ok {
-		_spec.SetField(messagestatus.FieldFailReason, field.TypeString, value)
+	if value, ok := msu.mutation.IsDelivered(); ok {
+		_spec.SetField(messagestatus.FieldIsDelivered, field.TypeBool, value)
 	}
-	if msu.mutation.FailReasonCleared() {
-		_spec.ClearField(messagestatus.FieldFailReason, field.TypeString)
+	if value, ok := msu.mutation.IsRead(); ok {
+		_spec.SetField(messagestatus.FieldIsRead, field.TypeBool, value)
 	}
-	if value, ok := msu.mutation.UpdateTime(); ok {
-		_spec.SetField(messagestatus.FieldUpdateTime, field.TypeTime, value)
+	if value, ok := msu.mutation.DeliveredTime(); ok {
+		_spec.SetField(messagestatus.FieldDeliveredTime, field.TypeTime, value)
+	}
+	if msu.mutation.DeliveredTimeCleared() {
+		_spec.ClearField(messagestatus.FieldDeliveredTime, field.TypeTime)
+	}
+	if value, ok := msu.mutation.ReadTime(); ok {
+		_spec.SetField(messagestatus.FieldReadTime, field.TypeTime, value)
+	}
+	if msu.mutation.ReadTimeCleared() {
+		_spec.ClearField(messagestatus.FieldReadTime, field.TypeTime)
+	}
+	if value, ok := msu.mutation.CreateTime(); ok {
+		_spec.SetField(messagestatus.FieldCreateTime, field.TypeTime, value)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, msu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -189,71 +249,119 @@ type MessageStatusUpdateOne struct {
 	mutation *MessageStatusMutation
 }
 
-// SetChatRecordId sets the "chatRecordId" field.
-func (msuo *MessageStatusUpdateOne) SetChatRecordId(i int) *MessageStatusUpdateOne {
-	msuo.mutation.ResetChatRecordId()
-	msuo.mutation.SetChatRecordId(i)
+// SetMsgId sets the "msgId" field.
+func (msuo *MessageStatusUpdateOne) SetMsgId(s string) *MessageStatusUpdateOne {
+	msuo.mutation.SetMsgId(s)
 	return msuo
 }
 
-// SetNillableChatRecordId sets the "chatRecordId" field if the given value is not nil.
-func (msuo *MessageStatusUpdateOne) SetNillableChatRecordId(i *int) *MessageStatusUpdateOne {
+// SetNillableMsgId sets the "msgId" field if the given value is not nil.
+func (msuo *MessageStatusUpdateOne) SetNillableMsgId(s *string) *MessageStatusUpdateOne {
+	if s != nil {
+		msuo.SetMsgId(*s)
+	}
+	return msuo
+}
+
+// SetUserId sets the "userId" field.
+func (msuo *MessageStatusUpdateOne) SetUserId(i int) *MessageStatusUpdateOne {
+	msuo.mutation.ResetUserId()
+	msuo.mutation.SetUserId(i)
+	return msuo
+}
+
+// SetNillableUserId sets the "userId" field if the given value is not nil.
+func (msuo *MessageStatusUpdateOne) SetNillableUserId(i *int) *MessageStatusUpdateOne {
 	if i != nil {
-		msuo.SetChatRecordId(*i)
+		msuo.SetUserId(*i)
 	}
 	return msuo
 }
 
-// AddChatRecordId adds i to the "chatRecordId" field.
-func (msuo *MessageStatusUpdateOne) AddChatRecordId(i int) *MessageStatusUpdateOne {
-	msuo.mutation.AddChatRecordId(i)
+// AddUserId adds i to the "userId" field.
+func (msuo *MessageStatusUpdateOne) AddUserId(i int) *MessageStatusUpdateOne {
+	msuo.mutation.AddUserId(i)
 	return msuo
 }
 
-// SetStatus sets the "status" field.
-func (msuo *MessageStatusUpdateOne) SetStatus(s string) *MessageStatusUpdateOne {
-	msuo.mutation.SetStatus(s)
+// SetIsDelivered sets the "isDelivered" field.
+func (msuo *MessageStatusUpdateOne) SetIsDelivered(b bool) *MessageStatusUpdateOne {
+	msuo.mutation.SetIsDelivered(b)
 	return msuo
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (msuo *MessageStatusUpdateOne) SetNillableStatus(s *string) *MessageStatusUpdateOne {
-	if s != nil {
-		msuo.SetStatus(*s)
+// SetNillableIsDelivered sets the "isDelivered" field if the given value is not nil.
+func (msuo *MessageStatusUpdateOne) SetNillableIsDelivered(b *bool) *MessageStatusUpdateOne {
+	if b != nil {
+		msuo.SetIsDelivered(*b)
 	}
 	return msuo
 }
 
-// SetFailReason sets the "failReason" field.
-func (msuo *MessageStatusUpdateOne) SetFailReason(s string) *MessageStatusUpdateOne {
-	msuo.mutation.SetFailReason(s)
+// SetIsRead sets the "isRead" field.
+func (msuo *MessageStatusUpdateOne) SetIsRead(b bool) *MessageStatusUpdateOne {
+	msuo.mutation.SetIsRead(b)
 	return msuo
 }
 
-// SetNillableFailReason sets the "failReason" field if the given value is not nil.
-func (msuo *MessageStatusUpdateOne) SetNillableFailReason(s *string) *MessageStatusUpdateOne {
-	if s != nil {
-		msuo.SetFailReason(*s)
+// SetNillableIsRead sets the "isRead" field if the given value is not nil.
+func (msuo *MessageStatusUpdateOne) SetNillableIsRead(b *bool) *MessageStatusUpdateOne {
+	if b != nil {
+		msuo.SetIsRead(*b)
 	}
 	return msuo
 }
 
-// ClearFailReason clears the value of the "failReason" field.
-func (msuo *MessageStatusUpdateOne) ClearFailReason() *MessageStatusUpdateOne {
-	msuo.mutation.ClearFailReason()
+// SetDeliveredTime sets the "deliveredTime" field.
+func (msuo *MessageStatusUpdateOne) SetDeliveredTime(t time.Time) *MessageStatusUpdateOne {
+	msuo.mutation.SetDeliveredTime(t)
 	return msuo
 }
 
-// SetUpdateTime sets the "updateTime" field.
-func (msuo *MessageStatusUpdateOne) SetUpdateTime(t time.Time) *MessageStatusUpdateOne {
-	msuo.mutation.SetUpdateTime(t)
-	return msuo
-}
-
-// SetNillableUpdateTime sets the "updateTime" field if the given value is not nil.
-func (msuo *MessageStatusUpdateOne) SetNillableUpdateTime(t *time.Time) *MessageStatusUpdateOne {
+// SetNillableDeliveredTime sets the "deliveredTime" field if the given value is not nil.
+func (msuo *MessageStatusUpdateOne) SetNillableDeliveredTime(t *time.Time) *MessageStatusUpdateOne {
 	if t != nil {
-		msuo.SetUpdateTime(*t)
+		msuo.SetDeliveredTime(*t)
+	}
+	return msuo
+}
+
+// ClearDeliveredTime clears the value of the "deliveredTime" field.
+func (msuo *MessageStatusUpdateOne) ClearDeliveredTime() *MessageStatusUpdateOne {
+	msuo.mutation.ClearDeliveredTime()
+	return msuo
+}
+
+// SetReadTime sets the "readTime" field.
+func (msuo *MessageStatusUpdateOne) SetReadTime(t time.Time) *MessageStatusUpdateOne {
+	msuo.mutation.SetReadTime(t)
+	return msuo
+}
+
+// SetNillableReadTime sets the "readTime" field if the given value is not nil.
+func (msuo *MessageStatusUpdateOne) SetNillableReadTime(t *time.Time) *MessageStatusUpdateOne {
+	if t != nil {
+		msuo.SetReadTime(*t)
+	}
+	return msuo
+}
+
+// ClearReadTime clears the value of the "readTime" field.
+func (msuo *MessageStatusUpdateOne) ClearReadTime() *MessageStatusUpdateOne {
+	msuo.mutation.ClearReadTime()
+	return msuo
+}
+
+// SetCreateTime sets the "createTime" field.
+func (msuo *MessageStatusUpdateOne) SetCreateTime(t time.Time) *MessageStatusUpdateOne {
+	msuo.mutation.SetCreateTime(t)
+	return msuo
+}
+
+// SetNillableCreateTime sets the "createTime" field if the given value is not nil.
+func (msuo *MessageStatusUpdateOne) SetNillableCreateTime(t *time.Time) *MessageStatusUpdateOne {
+	if t != nil {
+		msuo.SetCreateTime(*t)
 	}
 	return msuo
 }
@@ -305,9 +413,9 @@ func (msuo *MessageStatusUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (msuo *MessageStatusUpdateOne) check() error {
-	if v, ok := msuo.mutation.Status(); ok {
-		if err := messagestatus.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "MessageStatus.status": %w`, err)}
+	if v, ok := msuo.mutation.MsgId(); ok {
+		if err := messagestatus.MsgIdValidator(v); err != nil {
+			return &ValidationError{Name: "msgId", err: fmt.Errorf(`ent: validator failed for field "MessageStatus.msgId": %w`, err)}
 		}
 	}
 	return nil
@@ -342,23 +450,35 @@ func (msuo *MessageStatusUpdateOne) sqlSave(ctx context.Context) (_node *Message
 			}
 		}
 	}
-	if value, ok := msuo.mutation.ChatRecordId(); ok {
-		_spec.SetField(messagestatus.FieldChatRecordId, field.TypeInt, value)
+	if value, ok := msuo.mutation.MsgId(); ok {
+		_spec.SetField(messagestatus.FieldMsgId, field.TypeString, value)
 	}
-	if value, ok := msuo.mutation.AddedChatRecordId(); ok {
-		_spec.AddField(messagestatus.FieldChatRecordId, field.TypeInt, value)
+	if value, ok := msuo.mutation.UserId(); ok {
+		_spec.SetField(messagestatus.FieldUserId, field.TypeInt, value)
 	}
-	if value, ok := msuo.mutation.Status(); ok {
-		_spec.SetField(messagestatus.FieldStatus, field.TypeString, value)
+	if value, ok := msuo.mutation.AddedUserId(); ok {
+		_spec.AddField(messagestatus.FieldUserId, field.TypeInt, value)
 	}
-	if value, ok := msuo.mutation.FailReason(); ok {
-		_spec.SetField(messagestatus.FieldFailReason, field.TypeString, value)
+	if value, ok := msuo.mutation.IsDelivered(); ok {
+		_spec.SetField(messagestatus.FieldIsDelivered, field.TypeBool, value)
 	}
-	if msuo.mutation.FailReasonCleared() {
-		_spec.ClearField(messagestatus.FieldFailReason, field.TypeString)
+	if value, ok := msuo.mutation.IsRead(); ok {
+		_spec.SetField(messagestatus.FieldIsRead, field.TypeBool, value)
 	}
-	if value, ok := msuo.mutation.UpdateTime(); ok {
-		_spec.SetField(messagestatus.FieldUpdateTime, field.TypeTime, value)
+	if value, ok := msuo.mutation.DeliveredTime(); ok {
+		_spec.SetField(messagestatus.FieldDeliveredTime, field.TypeTime, value)
+	}
+	if msuo.mutation.DeliveredTimeCleared() {
+		_spec.ClearField(messagestatus.FieldDeliveredTime, field.TypeTime)
+	}
+	if value, ok := msuo.mutation.ReadTime(); ok {
+		_spec.SetField(messagestatus.FieldReadTime, field.TypeTime, value)
+	}
+	if msuo.mutation.ReadTimeCleared() {
+		_spec.ClearField(messagestatus.FieldReadTime, field.TypeTime)
+	}
+	if value, ok := msuo.mutation.CreateTime(); ok {
+		_spec.SetField(messagestatus.FieldCreateTime, field.TypeTime, value)
 	}
 	_node = &MessageStatus{config: msuo.config}
 	_spec.Assign = _node.assignValues

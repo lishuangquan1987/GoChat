@@ -5,6 +5,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 type MessageStatus struct {
@@ -13,9 +14,19 @@ type MessageStatus struct {
 
 func (MessageStatus) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int("chatRecordId").Comment("消息记录ID，关联ChatRecord"),
-		field.String("status").NotEmpty().Comment("状态：待发送/发送成功/发送失败/已读"),
-		field.String("failReason").Optional().Comment("失败原因"),
-		field.Time("updateTime").Default(time.Now).Comment("状态更新时间"),
+		field.String("msgId").NotEmpty().Comment("消息ID"),
+		field.Int("userId").Comment("用户ID"),
+		field.Bool("isDelivered").Default(false).Comment("是否已送达"),
+		field.Bool("isRead").Default(false).Comment("是否已读"),
+		field.Time("deliveredTime").Optional().Nillable().Comment("送达时间"),
+		field.Time("readTime").Optional().Nillable().Comment("已读时间"),
+		field.Time("createTime").Default(time.Now).Comment("创建时间"),
+	}
+}
+
+func (MessageStatus) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("msgId", "userId").Unique(),
+		index.Fields("userId"),
 	}
 }

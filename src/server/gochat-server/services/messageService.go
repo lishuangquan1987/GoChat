@@ -29,6 +29,15 @@ func SendMessage(fromUserId, toUserId int, msgType int, content string, groupId 
 		if !isFriend {
 			return "", errors.New("只能给好友发送消息")
 		}
+	} else {
+		// 如果是群聊，检查用户是否是群成员
+		isMember, err := IsGroupMember(*groupId, fromUserId)
+		if err != nil {
+			return "", err
+		}
+		if !isMember {
+			return "", errors.New("只有群成员才能发送群消息")
+		}
 	}
 
 	// 根据消息类型存储消息内容
@@ -65,20 +74,42 @@ func SendMessage(fromUserId, toUserId int, msgType int, content string, groupId 
 	}
 
 	// 创建聊天记录
-	chatRecordBuilder := db.ChatRecord.Create().
-		SetMsgId(msgId).
-		SetFromUserId(fromUserId).
-		SetToUserId(toUserId).
-		SetMsgType(msgType).
-		SetIsGroup(isGroup)
-
 	if isGroup {
-		chatRecordBuilder.SetGroupId(*groupId)
-	}
+		// 群聊消息：存储到 GroupChatRecord
+		_, err := db.GroupChatRecord.Create().
+			SetMsgId(msgId).
+			SetFromUserId(fmt.Sprintf("%d", fromUserId)).
+			SetGroupId(fmt.Sprintf("%d", *groupId)).
+			SetMsgType(fmt.Sprintf("%d", msgType)).
+			Save(context.TODO())
+		if err != nil {
+			return "", errors.New("保存群聊记录失败")
+		}
 
-	_, err := chatRecordBuilder.Save(context.TODO())
-	if err != nil {
-		return "", errors.New("保存聊天记录失败")
+		// 为所有群成员创建消息状态记录（除了发送者）
+		members, err := GetGroupMembers(*groupId)
+		if err == nil {
+			for _, member := range members {
+				if member.ID != fromUserId {
+					CreateMessageStatus(msgId, member.ID)
+				}
+			}
+		}
+	} else {
+		// 私聊消息：存储到 ChatRecord
+		_, err := db.ChatRecord.Create().
+			SetMsgId(msgId).
+			SetFromUserId(fromUserId).
+			SetToUserId(toUserId).
+			SetMsgType(msgType).
+			SetIsGroup(false).
+			Save(context.TODO())
+		if err != nil {
+			return "", errors.New("保存聊天记录失败")
+		}
+
+		// 为接收者创建消息状态记录
+		CreateMessageStatus(msgId, toUserId)
 	}
 
 	return msgId, nil
@@ -170,49 +201,59 @@ func GetChatHistory(userId, friendId int, page, pageSize int) ([]map[string]inte
 
 // GetGroupChatHistory 获取群聊历史记录
 func GetGroupChatHistory(groupId, page, pageSize int) ([]map[string]interface{}, int, error) {
-	// 计算偏移量
-	offset := (page - 1) * pageSize
-
-	// 查询群聊记录
-	records, err := db.ChatRecord.Query().
-		Where(
-			chatrecord.GroupId(groupId),
-			chatrecord.IsGroup(true),
-		).
-		Order(ent.Desc(chatrecord.FieldCreateTime)).
-		Limit(pageSize).
-		Offset(offset).
+	// 查询所有群聊记录，然后在代码中过滤
+	allRecords, err := db.GroupChatRecord.Query().
+		Order(ent.Desc("create_time")).
 		All(context.TODO())
 
 	if err != nil {
 		return nil, 0, errors.New("查询群聊记录失败")
 	}
 
-	// 查询总数
-	total, err := db.ChatRecord.Query().
-		Where(
-			chatrecord.GroupId(groupId),
-			chatrecord.IsGroup(true),
-		).
-		Count(context.TODO())
-
-	if err != nil {
-		return nil, 0, errors.New("查询群聊记录总数失败")
+	// 过滤出指定群组的记录
+	groupIdStr := fmt.Sprintf("%d", groupId)
+	filteredRecords := make([]*ent.GroupChatRecord, 0)
+	for _, record := range allRecords {
+		if record.GroupId == groupIdStr {
+			filteredRecords = append(filteredRecords, record)
+		}
 	}
 
+	// 计算总数
+	total := len(filteredRecords)
+
+	// 应用分页
+	offset := (page - 1) * pageSize
+	end := offset + pageSize
+	if offset > len(filteredRecords) {
+		offset = len(filteredRecords)
+	}
+	if end > len(filteredRecords) {
+		end = len(filteredRecords)
+	}
+	
+	pagedRecords := filteredRecords[offset:end]
+
 	// 组装消息详情
-	messages := make([]map[string]interface{}, 0, len(records))
-	for _, record := range records {
+	messages := make([]map[string]interface{}, 0, len(pagedRecords))
+	for _, record := range pagedRecords {
+		// 解析 fromUserId 和 msgType
+		fromUserId := 0
+		fmt.Sscanf(record.FromUserId, "%d", &fromUserId)
+		
+		msgType := 0
+		fmt.Sscanf(record.MsgType, "%d", &msgType)
+
 		message := map[string]interface{}{
 			"msgId":      record.MsgId,
-			"fromUserId": record.FromUserId,
-			"groupId":    record.GroupId,
-			"msgType":    record.MsgType,
+			"fromUserId": fromUserId,
+			"groupId":    groupId,
+			"msgType":    msgType,
 			"createTime": record.CreateTime,
 		}
 
 		// 根据消息类型获取消息内容
-		content, err := getMessageContent(record.MsgId, record.MsgType)
+		content, err := getMessageContent(record.MsgId, msgType)
 		if err == nil {
 			message["content"] = content
 		}
@@ -229,33 +270,31 @@ func GetOfflineMessages(userId int) ([]map[string]interface{}, error) {
 	// 实际应该记录用户的最后在线时间
 	lastOnlineTime := time.Now().Add(-24 * time.Hour) // 假设获取最近24小时的消息
 
-	// 查询发给该用户的消息
-	records, err := db.ChatRecord.Query().
+	messages := make([]map[string]interface{}, 0)
+
+	// 1. 查询私聊离线消息
+	privateRecords, err := db.ChatRecord.Query().
 		Where(
 			chatrecord.ToUserId(userId),
 			chatrecord.CreateTimeGT(lastOnlineTime),
+			chatrecord.IsGroup(false),
 		).
 		Order(ent.Asc(chatrecord.FieldCreateTime)).
 		All(context.TODO())
 
 	if err != nil {
-		return nil, errors.New("查询离线消息失败")
+		return nil, errors.New("查询私聊离线消息失败")
 	}
 
-	// 组装消息详情
-	messages := make([]map[string]interface{}, 0, len(records))
-	for _, record := range records {
+	// 组装私聊消息详情
+	for _, record := range privateRecords {
 		message := map[string]interface{}{
 			"msgId":      record.MsgId,
 			"fromUserId": record.FromUserId,
 			"toUserId":   record.ToUserId,
 			"msgType":    record.MsgType,
-			"isGroup":    record.IsGroup,
+			"isGroup":    false,
 			"createTime": record.CreateTime,
-		}
-
-		if record.IsGroup {
-			message["groupId"] = record.GroupId
 		}
 
 		// 根据消息类型获取消息内容
@@ -265,6 +304,59 @@ func GetOfflineMessages(userId int) ([]map[string]interface{}, error) {
 		}
 
 		messages = append(messages, message)
+	}
+
+	// 2. 查询群聊离线消息
+	// 获取用户所在的所有群组
+	userGroups, err := GetUserGroups(userId)
+	if err == nil {
+		// 查询所有群聊消息
+		groupRecords, err := db.GroupChatRecord.Query().
+			Order(ent.Asc("create_time")).
+			All(context.TODO())
+
+		if err == nil {
+			// 过滤出用户所在群组的消息
+			for _, record := range groupRecords {
+				if record.CreateTime.After(lastOnlineTime) {
+					// 检查是否是用户所在的群组
+					for _, group := range userGroups {
+						if fmt.Sprintf("%d", group.ID) == record.GroupId {
+							// 解析 fromUserId 和 msgType
+							fromUserId := 0
+							fmt.Sscanf(record.FromUserId, "%d", &fromUserId)
+							
+							msgType := 0
+							fmt.Sscanf(record.MsgType, "%d", &msgType)
+
+							// 不推送自己发送的消息
+							if fromUserId != userId {
+								groupId := 0
+								fmt.Sscanf(record.GroupId, "%d", &groupId)
+
+								message := map[string]interface{}{
+									"msgId":      record.MsgId,
+									"fromUserId": fromUserId,
+									"groupId":    groupId,
+									"msgType":    msgType,
+									"isGroup":    true,
+									"createTime": record.CreateTime,
+								}
+
+								// 根据消息类型获取消息内容
+								content, err := getMessageContent(record.MsgId, msgType)
+								if err == nil {
+									message["content"] = content
+								}
+
+								messages = append(messages, message)
+							}
+							break
+						}
+					}
+				}
+			}
+		}
 	}
 
 	return messages, nil
@@ -423,9 +515,132 @@ func GetConversationList(userId int) ([]map[string]interface{}, error) {
 	return conversations, nil
 }
 
-// MarkMessageAsRead 标记消息为已读（预留接口）
-func MarkMessageAsRead(userId int, msgId string) error {
-	// TODO: 实现消息已读状态管理
-	fmt.Printf("User %d marked message %s as read\n", userId, msgId)
+// CreateMessageStatus 创建消息状态记录
+func CreateMessageStatus(msgId string, userId int) error {
+	_, err := db.MessageStatus.Create().
+		SetMsgId(msgId).
+		SetUserId(userId).
+		SetIsDelivered(false).
+		SetIsRead(false).
+		Save(context.TODO())
+	
+	if err != nil {
+		return errors.New("创建消息状态失败")
+	}
 	return nil
+}
+
+// MarkMessageAsDelivered 标记消息为已送达
+func MarkMessageAsDelivered(msgId string, userId int) error {
+	// 查询所有消息状态并过滤
+	allStatus, err := db.MessageStatus.Query().
+		All(context.TODO())
+	
+	if err != nil {
+		return errors.New("查询消息状态失败")
+	}
+
+	// 过滤出匹配的状态
+	var targetStatus *ent.MessageStatus
+	for _, s := range allStatus {
+		if s.MsgId == msgId && s.UserId == userId {
+			targetStatus = s
+			break
+		}
+	}
+
+	if targetStatus == nil {
+		return errors.New("消息状态不存在")
+	}
+
+	// 更新为已送达
+	now := time.Now()
+	_, err = targetStatus.Update().
+		SetIsDelivered(true).
+		SetDeliveredTime(now).
+		Save(context.TODO())
+	
+	if err != nil {
+		return errors.New("更新消息送达状态失败")
+	}
+
+	return nil
+}
+
+// MarkMessageAsRead 标记消息为已读
+func MarkMessageAsRead(msgId string, userId int) error {
+	// 查询消息状态
+	status, err := db.MessageStatus.Query().
+		All(context.TODO())
+	
+	if err != nil {
+		return errors.New("查询消息状态失败")
+	}
+
+	// 过滤出匹配的状态
+	var targetStatus *ent.MessageStatus
+	for _, s := range status {
+		if s.MsgId == msgId && s.UserId == userId {
+			targetStatus = s
+			break
+		}
+	}
+
+	if targetStatus == nil {
+		return errors.New("消息状态不存在")
+	}
+
+	// 更新为已读
+	now := time.Now()
+	updateQuery := targetStatus.Update().
+		SetIsRead(true).
+		SetReadTime(now)
+	
+	// 如果还未送达，同时标记为已送达
+	if !targetStatus.IsDelivered {
+		updateQuery = updateQuery.
+			SetIsDelivered(true).
+			SetDeliveredTime(now)
+	}
+
+	_, err = updateQuery.Save(context.TODO())
+	
+	if err != nil {
+		return errors.New("更新消息已读状态失败")
+	}
+
+	return nil
+}
+
+// GetMessageStatus 获取消息状态
+func GetMessageStatus(msgId string, userId int) (*ent.MessageStatus, error) {
+	// 查询所有消息状态
+	allStatus, err := db.MessageStatus.Query().
+		All(context.TODO())
+	
+	if err != nil {
+		return nil, errors.New("查询消息状态失败")
+	}
+
+	// 过滤出匹配的状态
+	for _, s := range allStatus {
+		if s.MsgId == msgId && s.UserId == userId {
+			return s, nil
+		}
+	}
+
+	return nil, errors.New("消息状态不存在")
+}
+
+// BuildGroupMessageDetail 构建群聊消息详情
+func BuildGroupMessageDetail(msgId string, fromUserId, groupId, msgType int, content string) map[string]interface{} {
+	return map[string]interface{}{
+		"msgId":      msgId,
+		"fromUserId": fromUserId,
+		"groupId":    groupId,
+		"msgType":    msgType,
+		"content":    content,
+		"isGroup":    true,
+		"createTime": time.Now(),
+	}
 }

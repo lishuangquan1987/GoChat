@@ -63,12 +63,13 @@ func SendMessage(c *gin.Context) {
 		// 群聊消息 - 推送给所有在线群成员
 		members, err := services.GetGroupMembers(*parameter.GroupId)
 		if err == nil {
-			messageDetail, err := services.GetMessageDetail(msgId)
-			if err == nil {
-				for _, member := range members {
-					if member.ID != userID && wsmanager.IsUserOnline(strconv.Itoa(member.ID)) {
-						wsmanager.SendMessageToUser(strconv.Itoa(member.ID), messageDetail)
-					}
+			// 构建群聊消息详情
+			groupMessageDetail := services.BuildGroupMessageDetail(msgId, userID, *parameter.GroupId, parameter.MsgType, parameter.Content)
+			
+			// 广播给所有在线群成员（除了发送者）
+			for _, member := range members {
+				if member.ID != userID && wsmanager.IsUserOnline(strconv.Itoa(member.ID)) {
+					wsmanager.SendMessageToUser(strconv.Itoa(member.ID), groupMessageDetail)
 				}
 			}
 		}
@@ -272,6 +273,127 @@ func UploadFile(c *gin.Context) {
 		Message: "上传成功",
 		Data: map[string]interface{}{
 			"url": url,
+		},
+	})
+}
+
+// MarkMessageDelivered 标记消息为已送达
+func MarkMessageDelivered(c *gin.Context) {
+	userID, ok := middlewares.GetUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
+			Code:    401,
+			Message: "未授权",
+		})
+		return
+	}
+
+	var parameter struct {
+		MsgId string `json:"msgId" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&parameter); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Code:    400,
+			Message: "参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	err := services.MarkMessageAsDelivered(parameter.MsgId, userID)
+	if err != nil {
+		c.JSON(http.StatusOK, dto.ErrorResponse{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.Response{
+		Code:    0,
+		Message: "标记成功",
+		Data:    nil,
+	})
+}
+
+// MarkMessageRead 标记消息为已读
+func MarkMessageRead(c *gin.Context) {
+	userID, ok := middlewares.GetUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
+			Code:    401,
+			Message: "未授权",
+		})
+		return
+	}
+
+	var parameter struct {
+		MsgId string `json:"msgId" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&parameter); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Code:    400,
+			Message: "参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	err := services.MarkMessageAsRead(parameter.MsgId, userID)
+	if err != nil {
+		c.JSON(http.StatusOK, dto.ErrorResponse{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.Response{
+		Code:    0,
+		Message: "标记成功",
+		Data:    nil,
+	})
+}
+
+// GetMessageStatus 获取消息状态
+func GetMessageStatus(c *gin.Context) {
+	userID, ok := middlewares.GetUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
+			Code:    401,
+			Message: "未授权",
+		})
+		return
+	}
+
+	msgId := c.Query("msgId")
+	if msgId == "" {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Code:    400,
+			Message: "msgId参数不能为空",
+		})
+		return
+	}
+
+	status, err := services.GetMessageStatus(msgId, userID)
+	if err != nil {
+		c.JSON(http.StatusOK, dto.ErrorResponse{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.Response{
+		Code:    0,
+		Message: "获取成功",
+		Data: map[string]interface{}{
+			"msgId":         status.MsgId,
+			"userId":        status.UserId,
+			"isDelivered":   status.IsDelivered,
+			"isRead":        status.IsRead,
+			"deliveredTime": status.DeliveredTime,
+			"readTime":      status.ReadTime,
 		},
 	})
 }

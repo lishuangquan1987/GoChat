@@ -13,14 +13,20 @@ const (
 	Label = "message_status"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldChatRecordId holds the string denoting the chatrecordid field in the database.
-	FieldChatRecordId = "chat_record_id"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
-	// FieldFailReason holds the string denoting the failreason field in the database.
-	FieldFailReason = "fail_reason"
-	// FieldUpdateTime holds the string denoting the updatetime field in the database.
-	FieldUpdateTime = "update_time"
+	// FieldMsgId holds the string denoting the msgid field in the database.
+	FieldMsgId = "msg_id"
+	// FieldUserId holds the string denoting the userid field in the database.
+	FieldUserId = "user_id"
+	// FieldIsDelivered holds the string denoting the isdelivered field in the database.
+	FieldIsDelivered = "is_delivered"
+	// FieldIsRead holds the string denoting the isread field in the database.
+	FieldIsRead = "is_read"
+	// FieldDeliveredTime holds the string denoting the deliveredtime field in the database.
+	FieldDeliveredTime = "delivered_time"
+	// FieldReadTime holds the string denoting the readtime field in the database.
+	FieldReadTime = "read_time"
+	// FieldCreateTime holds the string denoting the createtime field in the database.
+	FieldCreateTime = "create_time"
 	// Table holds the table name of the messagestatus in the database.
 	Table = "message_status"
 )
@@ -28,10 +34,13 @@ const (
 // Columns holds all SQL columns for messagestatus fields.
 var Columns = []string{
 	FieldID,
-	FieldChatRecordId,
-	FieldStatus,
-	FieldFailReason,
-	FieldUpdateTime,
+	FieldMsgId,
+	FieldUserId,
+	FieldIsDelivered,
+	FieldIsRead,
+	FieldDeliveredTime,
+	FieldReadTime,
+	FieldCreateTime,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -45,10 +54,14 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	StatusValidator func(string) error
-	// DefaultUpdateTime holds the default value on creation for the "updateTime" field.
-	DefaultUpdateTime func() time.Time
+	// MsgIdValidator is a validator for the "msgId" field. It is called by the builders before save.
+	MsgIdValidator func(string) error
+	// DefaultIsDelivered holds the default value on creation for the "isDelivered" field.
+	DefaultIsDelivered bool
+	// DefaultIsRead holds the default value on creation for the "isRead" field.
+	DefaultIsRead bool
+	// DefaultCreateTime holds the default value on creation for the "createTime" field.
+	DefaultCreateTime func() time.Time
 )
 
 // OrderOption defines the ordering options for the MessageStatus queries.
@@ -59,22 +72,37 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByChatRecordId orders the results by the chatRecordId field.
-func ByChatRecordId(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldChatRecordId, opts...).ToFunc()
+// ByMsgId orders the results by the msgId field.
+func ByMsgId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMsgId, opts...).ToFunc()
 }
 
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+// ByUserId orders the results by the userId field.
+func ByUserId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUserId, opts...).ToFunc()
 }
 
-// ByFailReason orders the results by the failReason field.
-func ByFailReason(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldFailReason, opts...).ToFunc()
+// ByIsDelivered orders the results by the isDelivered field.
+func ByIsDelivered(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsDelivered, opts...).ToFunc()
 }
 
-// ByUpdateTime orders the results by the updateTime field.
-func ByUpdateTime(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUpdateTime, opts...).ToFunc()
+// ByIsRead orders the results by the isRead field.
+func ByIsRead(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsRead, opts...).ToFunc()
+}
+
+// ByDeliveredTime orders the results by the deliveredTime field.
+func ByDeliveredTime(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDeliveredTime, opts...).ToFunc()
+}
+
+// ByReadTime orders the results by the readTime field.
+func ByReadTime(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReadTime, opts...).ToFunc()
+}
+
+// ByCreateTime orders the results by the createTime field.
+func ByCreateTime(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreateTime, opts...).ToFunc()
 }

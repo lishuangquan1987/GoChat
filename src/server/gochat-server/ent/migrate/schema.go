@@ -24,6 +24,28 @@ var (
 		Name:       "chat_records",
 		Columns:    ChatRecordsColumns,
 		PrimaryKey: []*schema.Column{ChatRecordsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "chatrecord_msg_id",
+				Unique:  true,
+				Columns: []*schema.Column{ChatRecordsColumns[1]},
+			},
+			{
+				Name:    "chatrecord_from_user_id_to_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{ChatRecordsColumns[2], ChatRecordsColumns[3]},
+			},
+			{
+				Name:    "chatrecord_to_user_id_create_time",
+				Unique:  false,
+				Columns: []*schema.Column{ChatRecordsColumns[3], ChatRecordsColumns[7]},
+			},
+			{
+				Name:    "chatrecord_group_id_create_time",
+				Unique:  false,
+				Columns: []*schema.Column{ChatRecordsColumns[6], ChatRecordsColumns[7]},
+			},
+		},
 	}
 	// FriendRelationshipsColumns holds the columns for the "friend_relationships" table.
 	FriendRelationshipsColumns = []*schema.Column{
@@ -36,6 +58,18 @@ var (
 		Name:       "friend_relationships",
 		Columns:    FriendRelationshipsColumns,
 		PrimaryKey: []*schema.Column{FriendRelationshipsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "friendrelationship_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{FriendRelationshipsColumns[1]},
+			},
+			{
+				Name:    "friendrelationship_user_id_friend_id",
+				Unique:  true,
+				Columns: []*schema.Column{FriendRelationshipsColumns[1], FriendRelationshipsColumns[2]},
+			},
+		},
 	}
 	// FriendRequestsColumns holds the columns for the "friend_requests" table.
 	FriendRequestsColumns = []*schema.Column{
@@ -51,6 +85,18 @@ var (
 		Name:       "friend_requests",
 		Columns:    FriendRequestsColumns,
 		PrimaryKey: []*schema.Column{FriendRequestsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "friendrequest_to_user_id_status",
+				Unique:  false,
+				Columns: []*schema.Column{FriendRequestsColumns[2], FriendRequestsColumns[4]},
+			},
+			{
+				Name:    "friendrequest_from_user_id_to_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{FriendRequestsColumns[1], FriendRequestsColumns[2]},
+			},
+		},
 	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
@@ -82,6 +128,18 @@ var (
 		Name:       "group_chat_records",
 		Columns:    GroupChatRecordsColumns,
 		PrimaryKey: []*schema.Column{GroupChatRecordsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "groupchatrecord_msg_id",
+				Unique:  true,
+				Columns: []*schema.Column{GroupChatRecordsColumns[1]},
+			},
+			{
+				Name:    "groupchatrecord_group_id_create_time",
+				Unique:  false,
+				Columns: []*schema.Column{GroupChatRecordsColumns[3], GroupChatRecordsColumns[5]},
+			},
+		},
 	}
 	// ImageMessagesColumns holds the columns for the "image_messages" table.
 	ImageMessagesColumns = []*schema.Column{
@@ -112,16 +170,31 @@ var (
 	// MessageStatusColumns holds the columns for the "message_status" table.
 	MessageStatusColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "chat_record_id", Type: field.TypeInt},
-		{Name: "status", Type: field.TypeString},
-		{Name: "fail_reason", Type: field.TypeString, Nullable: true},
-		{Name: "update_time", Type: field.TypeTime},
+		{Name: "msg_id", Type: field.TypeString},
+		{Name: "user_id", Type: field.TypeInt},
+		{Name: "is_delivered", Type: field.TypeBool, Default: false},
+		{Name: "is_read", Type: field.TypeBool, Default: false},
+		{Name: "delivered_time", Type: field.TypeTime, Nullable: true},
+		{Name: "read_time", Type: field.TypeTime, Nullable: true},
+		{Name: "create_time", Type: field.TypeTime},
 	}
 	// MessageStatusTable holds the schema information for the "message_status" table.
 	MessageStatusTable = &schema.Table{
 		Name:       "message_status",
 		Columns:    MessageStatusColumns,
 		PrimaryKey: []*schema.Column{MessageStatusColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "messagestatus_msg_id_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{MessageStatusColumns[1], MessageStatusColumns[2]},
+			},
+			{
+				Name:    "messagestatus_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{MessageStatusColumns[2]},
+			},
+		},
 	}
 	// TextMessagesColumns holds the columns for the "text_messages" table.
 	TextMessagesColumns = []*schema.Column{
@@ -148,6 +221,13 @@ var (
 		Name:       "users",
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "user_username",
+				Unique:  true,
+				Columns: []*schema.Column{UsersColumns[1]},
+			},
+		},
 	}
 	// VideoMessagesColumns holds the columns for the "video_messages" table.
 	VideoMessagesColumns = []*schema.Column{

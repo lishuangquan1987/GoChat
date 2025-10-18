@@ -108,12 +108,22 @@ func handleMessages(userId string, conn *websocket.Conn) {
 			break
 		}
 
-		log.Printf("Received message from user %s: %s", userId, string(message))
-
-		// 回显消息（临时实现，后续会在消息处理模块中完善）
-		if err := conn.WriteMessage(messageType, message); err != nil {
-			log.Printf("Error writing message to user %s: %v", userId, err)
-			break
+		// 只处理文本消息
+		if messageType == websocket.TextMessage {
+			log.Printf("Received message from user %s: %s", userId, string(message))
+			
+			// 使用消息接收处理器处理消息
+			// 注意：为避免循环依赖，这里直接处理简单逻辑
+			// 复杂的消息处理应该通过HTTP API完成
+			
+			// 这里可以处理心跳、确认等简单消息
+			// 实际的聊天消息发送应该通过 /api/messages/send 接口
+		} else if messageType == websocket.PingMessage {
+			// 响应Ping消息
+			if err := conn.WriteMessage(websocket.PongMessage, nil); err != nil {
+				log.Printf("Error sending pong to user %s: %v", userId, err)
+				break
+			}
 		}
 	}
 }
@@ -165,27 +175,20 @@ func BroadcastMessage(message interface{}) {
 
 // pushOfflineMessages 推送离线消息
 func pushOfflineMessages(userId string, conn *websocket.Conn) {
-	// 注意：这里需要导入 services 包，但为了避免循环依赖，
-	// 我们将在后续优化中处理。暂时记录日志
-	log.Printf("TODO: Push offline messages to user %s", userId)
+	// 为了避免循环依赖，离线消息推送通过HTTP API获取
+	// 客户端在连接建立后应该调用 /api/messages/offline 接口获取离线消息
 	
-	// TODO: 调用 services.GetOfflineMessages 获取离线消息并推送
-	// userIdInt, err := strconv.Atoi(userId)
-	// if err != nil {
-	// 	return
-	// }
-	// 
-	// messages, err := services.GetOfflineMessages(userIdInt)
-	// if err != nil {
-	// 	log.Printf("Error getting offline messages for user %s: %v", userId, err)
-	// 	return
-	// }
-	// 
-	// for _, msg := range messages {
-	// 	err := conn.WriteJSON(msg)
-	// 	if err != nil {
-	// 		log.Printf("Error sending offline message to user %s: %v", userId, err)
-	// 		break
-	// 	}
-	// }
+	// 发送通知告诉客户端有离线消息
+	notification := map[string]interface{}{
+		"type":    "notification",
+		"message": "请获取离线消息",
+		"action":  "fetch_offline_messages",
+	}
+	
+	err := conn.WriteJSON(notification)
+	if err != nil {
+		log.Printf("Error sending offline message notification to user %s: %v", userId, err)
+	}
+	
+	log.Printf("Offline message notification sent to user %s", userId)
 }

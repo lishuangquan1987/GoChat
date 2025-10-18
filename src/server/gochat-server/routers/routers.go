@@ -9,9 +9,10 @@ import (
 
 // RegisterRoutes 注册所有路由
 func RegisterRoutes(r *gin.Engine) {
-	// 应用全局中间件
-	r.Use(middlewares.RecoveryMiddleware())
-	r.Use(middlewares.LoggerMiddleware())
+	// 应用全局中间件（按顺序）
+	r.Use(middlewares.RecoveryMiddleware()) // 1. 恢复panic
+	r.Use(middlewares.CORSMiddleware())     // 2. 跨域处理
+	r.Use(middlewares.LoggerMiddleware())   // 3. 日志记录
 
 	// API 路由组
 	api := r.Group("/api")
@@ -54,6 +55,9 @@ func RegisterRoutes(r *gin.Engine) {
 			messages.GET("/conversations", controllers.GetConversationList)
 			messages.GET("/offline", controllers.GetOfflineMessages)
 			messages.POST("/upload", controllers.UploadFile)
+			messages.POST("/delivered", controllers.MarkMessageDelivered)
+			messages.POST("/read", controllers.MarkMessageRead)
+			messages.GET("/status", controllers.GetMessageStatus)
 		}
 
 		// 群组相关路由（需要认证）

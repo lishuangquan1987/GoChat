@@ -54,244 +54,304 @@ func IDLTE(id int) predicate.MessageStatus {
 	return predicate.MessageStatus(sql.FieldLTE(FieldID, id))
 }
 
-// ChatRecordId applies equality check predicate on the "chatRecordId" field. It's identical to ChatRecordIdEQ.
-func ChatRecordId(v int) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldEQ(FieldChatRecordId, v))
+// MsgId applies equality check predicate on the "msgId" field. It's identical to MsgIdEQ.
+func MsgId(v string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldMsgId, v))
 }
 
-// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
-func Status(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldEQ(FieldStatus, v))
+// UserId applies equality check predicate on the "userId" field. It's identical to UserIdEQ.
+func UserId(v int) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldUserId, v))
 }
 
-// FailReason applies equality check predicate on the "failReason" field. It's identical to FailReasonEQ.
-func FailReason(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldEQ(FieldFailReason, v))
+// IsDelivered applies equality check predicate on the "isDelivered" field. It's identical to IsDeliveredEQ.
+func IsDelivered(v bool) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldIsDelivered, v))
 }
 
-// UpdateTime applies equality check predicate on the "updateTime" field. It's identical to UpdateTimeEQ.
-func UpdateTime(v time.Time) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldEQ(FieldUpdateTime, v))
+// IsRead applies equality check predicate on the "isRead" field. It's identical to IsReadEQ.
+func IsRead(v bool) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldIsRead, v))
 }
 
-// ChatRecordIdEQ applies the EQ predicate on the "chatRecordId" field.
-func ChatRecordIdEQ(v int) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldEQ(FieldChatRecordId, v))
+// DeliveredTime applies equality check predicate on the "deliveredTime" field. It's identical to DeliveredTimeEQ.
+func DeliveredTime(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldDeliveredTime, v))
 }
 
-// ChatRecordIdNEQ applies the NEQ predicate on the "chatRecordId" field.
-func ChatRecordIdNEQ(v int) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldNEQ(FieldChatRecordId, v))
+// ReadTime applies equality check predicate on the "readTime" field. It's identical to ReadTimeEQ.
+func ReadTime(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldReadTime, v))
 }
 
-// ChatRecordIdIn applies the In predicate on the "chatRecordId" field.
-func ChatRecordIdIn(vs ...int) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldIn(FieldChatRecordId, vs...))
+// CreateTime applies equality check predicate on the "createTime" field. It's identical to CreateTimeEQ.
+func CreateTime(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldCreateTime, v))
 }
 
-// ChatRecordIdNotIn applies the NotIn predicate on the "chatRecordId" field.
-func ChatRecordIdNotIn(vs ...int) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldNotIn(FieldChatRecordId, vs...))
+// MsgIdEQ applies the EQ predicate on the "msgId" field.
+func MsgIdEQ(v string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldMsgId, v))
 }
 
-// ChatRecordIdGT applies the GT predicate on the "chatRecordId" field.
-func ChatRecordIdGT(v int) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldGT(FieldChatRecordId, v))
+// MsgIdNEQ applies the NEQ predicate on the "msgId" field.
+func MsgIdNEQ(v string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNEQ(FieldMsgId, v))
 }
 
-// ChatRecordIdGTE applies the GTE predicate on the "chatRecordId" field.
-func ChatRecordIdGTE(v int) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldGTE(FieldChatRecordId, v))
+// MsgIdIn applies the In predicate on the "msgId" field.
+func MsgIdIn(vs ...string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldIn(FieldMsgId, vs...))
 }
 
-// ChatRecordIdLT applies the LT predicate on the "chatRecordId" field.
-func ChatRecordIdLT(v int) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldLT(FieldChatRecordId, v))
+// MsgIdNotIn applies the NotIn predicate on the "msgId" field.
+func MsgIdNotIn(vs ...string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNotIn(FieldMsgId, vs...))
 }
 
-// ChatRecordIdLTE applies the LTE predicate on the "chatRecordId" field.
-func ChatRecordIdLTE(v int) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldLTE(FieldChatRecordId, v))
+// MsgIdGT applies the GT predicate on the "msgId" field.
+func MsgIdGT(v string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldGT(FieldMsgId, v))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldEQ(FieldStatus, v))
+// MsgIdGTE applies the GTE predicate on the "msgId" field.
+func MsgIdGTE(v string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldGTE(FieldMsgId, v))
 }
 
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldNEQ(FieldStatus, v))
+// MsgIdLT applies the LT predicate on the "msgId" field.
+func MsgIdLT(v string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldLT(FieldMsgId, v))
 }
 
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldIn(FieldStatus, vs...))
+// MsgIdLTE applies the LTE predicate on the "msgId" field.
+func MsgIdLTE(v string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldLTE(FieldMsgId, v))
 }
 
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldNotIn(FieldStatus, vs...))
+// MsgIdContains applies the Contains predicate on the "msgId" field.
+func MsgIdContains(v string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldContains(FieldMsgId, v))
 }
 
-// StatusGT applies the GT predicate on the "status" field.
-func StatusGT(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldGT(FieldStatus, v))
+// MsgIdHasPrefix applies the HasPrefix predicate on the "msgId" field.
+func MsgIdHasPrefix(v string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldHasPrefix(FieldMsgId, v))
 }
 
-// StatusGTE applies the GTE predicate on the "status" field.
-func StatusGTE(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldGTE(FieldStatus, v))
+// MsgIdHasSuffix applies the HasSuffix predicate on the "msgId" field.
+func MsgIdHasSuffix(v string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldHasSuffix(FieldMsgId, v))
 }
 
-// StatusLT applies the LT predicate on the "status" field.
-func StatusLT(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldLT(FieldStatus, v))
+// MsgIdEqualFold applies the EqualFold predicate on the "msgId" field.
+func MsgIdEqualFold(v string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEqualFold(FieldMsgId, v))
 }
 
-// StatusLTE applies the LTE predicate on the "status" field.
-func StatusLTE(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldLTE(FieldStatus, v))
+// MsgIdContainsFold applies the ContainsFold predicate on the "msgId" field.
+func MsgIdContainsFold(v string) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldContainsFold(FieldMsgId, v))
 }
 
-// StatusContains applies the Contains predicate on the "status" field.
-func StatusContains(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldContains(FieldStatus, v))
+// UserIdEQ applies the EQ predicate on the "userId" field.
+func UserIdEQ(v int) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldUserId, v))
 }
 
-// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
-func StatusHasPrefix(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldHasPrefix(FieldStatus, v))
+// UserIdNEQ applies the NEQ predicate on the "userId" field.
+func UserIdNEQ(v int) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNEQ(FieldUserId, v))
 }
 
-// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
-func StatusHasSuffix(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldHasSuffix(FieldStatus, v))
+// UserIdIn applies the In predicate on the "userId" field.
+func UserIdIn(vs ...int) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldIn(FieldUserId, vs...))
 }
 
-// StatusEqualFold applies the EqualFold predicate on the "status" field.
-func StatusEqualFold(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldEqualFold(FieldStatus, v))
+// UserIdNotIn applies the NotIn predicate on the "userId" field.
+func UserIdNotIn(vs ...int) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNotIn(FieldUserId, vs...))
 }
 
-// StatusContainsFold applies the ContainsFold predicate on the "status" field.
-func StatusContainsFold(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldContainsFold(FieldStatus, v))
+// UserIdGT applies the GT predicate on the "userId" field.
+func UserIdGT(v int) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldGT(FieldUserId, v))
 }
 
-// FailReasonEQ applies the EQ predicate on the "failReason" field.
-func FailReasonEQ(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldEQ(FieldFailReason, v))
+// UserIdGTE applies the GTE predicate on the "userId" field.
+func UserIdGTE(v int) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldGTE(FieldUserId, v))
 }
 
-// FailReasonNEQ applies the NEQ predicate on the "failReason" field.
-func FailReasonNEQ(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldNEQ(FieldFailReason, v))
+// UserIdLT applies the LT predicate on the "userId" field.
+func UserIdLT(v int) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldLT(FieldUserId, v))
 }
 
-// FailReasonIn applies the In predicate on the "failReason" field.
-func FailReasonIn(vs ...string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldIn(FieldFailReason, vs...))
+// UserIdLTE applies the LTE predicate on the "userId" field.
+func UserIdLTE(v int) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldLTE(FieldUserId, v))
 }
 
-// FailReasonNotIn applies the NotIn predicate on the "failReason" field.
-func FailReasonNotIn(vs ...string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldNotIn(FieldFailReason, vs...))
+// IsDeliveredEQ applies the EQ predicate on the "isDelivered" field.
+func IsDeliveredEQ(v bool) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldIsDelivered, v))
 }
 
-// FailReasonGT applies the GT predicate on the "failReason" field.
-func FailReasonGT(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldGT(FieldFailReason, v))
+// IsDeliveredNEQ applies the NEQ predicate on the "isDelivered" field.
+func IsDeliveredNEQ(v bool) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNEQ(FieldIsDelivered, v))
 }
 
-// FailReasonGTE applies the GTE predicate on the "failReason" field.
-func FailReasonGTE(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldGTE(FieldFailReason, v))
+// IsReadEQ applies the EQ predicate on the "isRead" field.
+func IsReadEQ(v bool) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldIsRead, v))
 }
 
-// FailReasonLT applies the LT predicate on the "failReason" field.
-func FailReasonLT(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldLT(FieldFailReason, v))
+// IsReadNEQ applies the NEQ predicate on the "isRead" field.
+func IsReadNEQ(v bool) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNEQ(FieldIsRead, v))
 }
 
-// FailReasonLTE applies the LTE predicate on the "failReason" field.
-func FailReasonLTE(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldLTE(FieldFailReason, v))
+// DeliveredTimeEQ applies the EQ predicate on the "deliveredTime" field.
+func DeliveredTimeEQ(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldDeliveredTime, v))
 }
 
-// FailReasonContains applies the Contains predicate on the "failReason" field.
-func FailReasonContains(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldContains(FieldFailReason, v))
+// DeliveredTimeNEQ applies the NEQ predicate on the "deliveredTime" field.
+func DeliveredTimeNEQ(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNEQ(FieldDeliveredTime, v))
 }
 
-// FailReasonHasPrefix applies the HasPrefix predicate on the "failReason" field.
-func FailReasonHasPrefix(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldHasPrefix(FieldFailReason, v))
+// DeliveredTimeIn applies the In predicate on the "deliveredTime" field.
+func DeliveredTimeIn(vs ...time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldIn(FieldDeliveredTime, vs...))
 }
 
-// FailReasonHasSuffix applies the HasSuffix predicate on the "failReason" field.
-func FailReasonHasSuffix(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldHasSuffix(FieldFailReason, v))
+// DeliveredTimeNotIn applies the NotIn predicate on the "deliveredTime" field.
+func DeliveredTimeNotIn(vs ...time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNotIn(FieldDeliveredTime, vs...))
 }
 
-// FailReasonIsNil applies the IsNil predicate on the "failReason" field.
-func FailReasonIsNil() predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldIsNull(FieldFailReason))
+// DeliveredTimeGT applies the GT predicate on the "deliveredTime" field.
+func DeliveredTimeGT(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldGT(FieldDeliveredTime, v))
 }
 
-// FailReasonNotNil applies the NotNil predicate on the "failReason" field.
-func FailReasonNotNil() predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldNotNull(FieldFailReason))
+// DeliveredTimeGTE applies the GTE predicate on the "deliveredTime" field.
+func DeliveredTimeGTE(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldGTE(FieldDeliveredTime, v))
 }
 
-// FailReasonEqualFold applies the EqualFold predicate on the "failReason" field.
-func FailReasonEqualFold(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldEqualFold(FieldFailReason, v))
+// DeliveredTimeLT applies the LT predicate on the "deliveredTime" field.
+func DeliveredTimeLT(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldLT(FieldDeliveredTime, v))
 }
 
-// FailReasonContainsFold applies the ContainsFold predicate on the "failReason" field.
-func FailReasonContainsFold(v string) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldContainsFold(FieldFailReason, v))
+// DeliveredTimeLTE applies the LTE predicate on the "deliveredTime" field.
+func DeliveredTimeLTE(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldLTE(FieldDeliveredTime, v))
 }
 
-// UpdateTimeEQ applies the EQ predicate on the "updateTime" field.
-func UpdateTimeEQ(v time.Time) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldEQ(FieldUpdateTime, v))
+// DeliveredTimeIsNil applies the IsNil predicate on the "deliveredTime" field.
+func DeliveredTimeIsNil() predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldIsNull(FieldDeliveredTime))
 }
 
-// UpdateTimeNEQ applies the NEQ predicate on the "updateTime" field.
-func UpdateTimeNEQ(v time.Time) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldNEQ(FieldUpdateTime, v))
+// DeliveredTimeNotNil applies the NotNil predicate on the "deliveredTime" field.
+func DeliveredTimeNotNil() predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNotNull(FieldDeliveredTime))
 }
 
-// UpdateTimeIn applies the In predicate on the "updateTime" field.
-func UpdateTimeIn(vs ...time.Time) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldIn(FieldUpdateTime, vs...))
+// ReadTimeEQ applies the EQ predicate on the "readTime" field.
+func ReadTimeEQ(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldReadTime, v))
 }
 
-// UpdateTimeNotIn applies the NotIn predicate on the "updateTime" field.
-func UpdateTimeNotIn(vs ...time.Time) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldNotIn(FieldUpdateTime, vs...))
+// ReadTimeNEQ applies the NEQ predicate on the "readTime" field.
+func ReadTimeNEQ(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNEQ(FieldReadTime, v))
 }
 
-// UpdateTimeGT applies the GT predicate on the "updateTime" field.
-func UpdateTimeGT(v time.Time) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldGT(FieldUpdateTime, v))
+// ReadTimeIn applies the In predicate on the "readTime" field.
+func ReadTimeIn(vs ...time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldIn(FieldReadTime, vs...))
 }
 
-// UpdateTimeGTE applies the GTE predicate on the "updateTime" field.
-func UpdateTimeGTE(v time.Time) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldGTE(FieldUpdateTime, v))
+// ReadTimeNotIn applies the NotIn predicate on the "readTime" field.
+func ReadTimeNotIn(vs ...time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNotIn(FieldReadTime, vs...))
 }
 
-// UpdateTimeLT applies the LT predicate on the "updateTime" field.
-func UpdateTimeLT(v time.Time) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldLT(FieldUpdateTime, v))
+// ReadTimeGT applies the GT predicate on the "readTime" field.
+func ReadTimeGT(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldGT(FieldReadTime, v))
 }
 
-// UpdateTimeLTE applies the LTE predicate on the "updateTime" field.
-func UpdateTimeLTE(v time.Time) predicate.MessageStatus {
-	return predicate.MessageStatus(sql.FieldLTE(FieldUpdateTime, v))
+// ReadTimeGTE applies the GTE predicate on the "readTime" field.
+func ReadTimeGTE(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldGTE(FieldReadTime, v))
+}
+
+// ReadTimeLT applies the LT predicate on the "readTime" field.
+func ReadTimeLT(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldLT(FieldReadTime, v))
+}
+
+// ReadTimeLTE applies the LTE predicate on the "readTime" field.
+func ReadTimeLTE(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldLTE(FieldReadTime, v))
+}
+
+// ReadTimeIsNil applies the IsNil predicate on the "readTime" field.
+func ReadTimeIsNil() predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldIsNull(FieldReadTime))
+}
+
+// ReadTimeNotNil applies the NotNil predicate on the "readTime" field.
+func ReadTimeNotNil() predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNotNull(FieldReadTime))
+}
+
+// CreateTimeEQ applies the EQ predicate on the "createTime" field.
+func CreateTimeEQ(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldEQ(FieldCreateTime, v))
+}
+
+// CreateTimeNEQ applies the NEQ predicate on the "createTime" field.
+func CreateTimeNEQ(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNEQ(FieldCreateTime, v))
+}
+
+// CreateTimeIn applies the In predicate on the "createTime" field.
+func CreateTimeIn(vs ...time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldIn(FieldCreateTime, vs...))
+}
+
+// CreateTimeNotIn applies the NotIn predicate on the "createTime" field.
+func CreateTimeNotIn(vs ...time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldNotIn(FieldCreateTime, vs...))
+}
+
+// CreateTimeGT applies the GT predicate on the "createTime" field.
+func CreateTimeGT(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldGT(FieldCreateTime, v))
+}
+
+// CreateTimeGTE applies the GTE predicate on the "createTime" field.
+func CreateTimeGTE(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldGTE(FieldCreateTime, v))
+}
+
+// CreateTimeLT applies the LT predicate on the "createTime" field.
+func CreateTimeLT(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldLT(FieldCreateTime, v))
+}
+
+// CreateTimeLTE applies the LTE predicate on the "createTime" field.
+func CreateTimeLTE(v time.Time) predicate.MessageStatus {
+	return predicate.MessageStatus(sql.FieldLTE(FieldCreateTime, v))
 }
 
 // And groups predicates with the AND operator between them.

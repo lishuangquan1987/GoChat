@@ -1,15 +1,18 @@
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../services/storage_service.dart';
+import '../services/websocket_service.dart';
 
 class UserProvider with ChangeNotifier {
   User? _currentUser;
   String? _token;
   bool _isLoggedIn = false;
+  WebSocketService? _wsService;
 
   User? get currentUser => _currentUser;
   String? get token => _token;
   bool get isLoggedIn => _isLoggedIn;
+  WebSocketService? get wsService => _wsService;
 
   Future<bool> checkLoginStatus() async {
     _token = await StorageService.getToken();
@@ -33,10 +36,18 @@ class UserProvider with ChangeNotifier {
     await StorageService.saveToken(token);
     await StorageService.saveUser(user.toJson());
     
+    // 建立 WebSocket 连接
+    _wsService = WebSocketService();
+    _wsService!.connect(user.id.toString(), token);
+    
     notifyListeners();
   }
 
   Future<void> logout() async {
+    // 断开 WebSocket 连接
+    _wsService?.disconnect();
+    _wsService = null;
+    
     _currentUser = null;
     _token = null;
     _isLoggedIn = false;

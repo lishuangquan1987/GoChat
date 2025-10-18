@@ -262,12 +262,12 @@ func (msq *MessageStatusQuery) Clone() *MessageStatusQuery {
 // Example:
 //
 //	var v []struct {
-//		ChatRecordId int `json:"chatRecordId,omitempty"`
+//		MsgId string `json:"msgId,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.MessageStatus.Query().
-//		GroupBy(messagestatus.FieldChatRecordId).
+//		GroupBy(messagestatus.FieldMsgId).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (msq *MessageStatusQuery) GroupBy(field string, fields ...string) *MessageStatusGroupBy {
@@ -285,11 +285,11 @@ func (msq *MessageStatusQuery) GroupBy(field string, fields ...string) *MessageS
 // Example:
 //
 //	var v []struct {
-//		ChatRecordId int `json:"chatRecordId,omitempty"`
+//		MsgId string `json:"msgId,omitempty"`
 //	}
 //
 //	client.MessageStatus.Query().
-//		Select(messagestatus.FieldChatRecordId).
+//		Select(messagestatus.FieldMsgId).
 //		Scan(ctx, &v)
 func (msq *MessageStatusQuery) Select(fields ...string) *MessageStatusSelect {
 	msq.ctx.Fields = append(msq.ctx.Fields, fields...)

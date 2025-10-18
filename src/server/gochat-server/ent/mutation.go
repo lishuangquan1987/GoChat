@@ -4064,18 +4064,21 @@ func (m *MessageMutation) ResetEdge(name string) error {
 // MessageStatusMutation represents an operation that mutates the MessageStatus nodes in the graph.
 type MessageStatusMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *int
-	chatRecordId    *int
-	addchatRecordId *int
-	status          *string
-	failReason      *string
-	updateTime      *time.Time
-	clearedFields   map[string]struct{}
-	done            bool
-	oldValue        func(context.Context) (*MessageStatus, error)
-	predicates      []predicate.MessageStatus
+	op            Op
+	typ           string
+	id            *int
+	msgId         *string
+	userId        *int
+	adduserId     *int
+	isDelivered   *bool
+	isRead        *bool
+	deliveredTime *time.Time
+	readTime      *time.Time
+	createTime    *time.Time
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*MessageStatus, error)
+	predicates    []predicate.MessageStatus
 }
 
 var _ ent.Mutation = (*MessageStatusMutation)(nil)
@@ -4176,181 +4179,302 @@ func (m *MessageStatusMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetChatRecordId sets the "chatRecordId" field.
-func (m *MessageStatusMutation) SetChatRecordId(i int) {
-	m.chatRecordId = &i
-	m.addchatRecordId = nil
+// SetMsgId sets the "msgId" field.
+func (m *MessageStatusMutation) SetMsgId(s string) {
+	m.msgId = &s
 }
 
-// ChatRecordId returns the value of the "chatRecordId" field in the mutation.
-func (m *MessageStatusMutation) ChatRecordId() (r int, exists bool) {
-	v := m.chatRecordId
+// MsgId returns the value of the "msgId" field in the mutation.
+func (m *MessageStatusMutation) MsgId() (r string, exists bool) {
+	v := m.msgId
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldChatRecordId returns the old "chatRecordId" field's value of the MessageStatus entity.
+// OldMsgId returns the old "msgId" field's value of the MessageStatus entity.
 // If the MessageStatus object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MessageStatusMutation) OldChatRecordId(ctx context.Context) (v int, err error) {
+func (m *MessageStatusMutation) OldMsgId(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldChatRecordId is only allowed on UpdateOne operations")
+		return v, errors.New("OldMsgId is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldChatRecordId requires an ID field in the mutation")
+		return v, errors.New("OldMsgId requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldChatRecordId: %w", err)
+		return v, fmt.Errorf("querying old value for OldMsgId: %w", err)
 	}
-	return oldValue.ChatRecordId, nil
+	return oldValue.MsgId, nil
 }
 
-// AddChatRecordId adds i to the "chatRecordId" field.
-func (m *MessageStatusMutation) AddChatRecordId(i int) {
-	if m.addchatRecordId != nil {
-		*m.addchatRecordId += i
+// ResetMsgId resets all changes to the "msgId" field.
+func (m *MessageStatusMutation) ResetMsgId() {
+	m.msgId = nil
+}
+
+// SetUserId sets the "userId" field.
+func (m *MessageStatusMutation) SetUserId(i int) {
+	m.userId = &i
+	m.adduserId = nil
+}
+
+// UserId returns the value of the "userId" field in the mutation.
+func (m *MessageStatusMutation) UserId() (r int, exists bool) {
+	v := m.userId
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserId returns the old "userId" field's value of the MessageStatus entity.
+// If the MessageStatus object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MessageStatusMutation) OldUserId(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserId is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserId requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserId: %w", err)
+	}
+	return oldValue.UserId, nil
+}
+
+// AddUserId adds i to the "userId" field.
+func (m *MessageStatusMutation) AddUserId(i int) {
+	if m.adduserId != nil {
+		*m.adduserId += i
 	} else {
-		m.addchatRecordId = &i
+		m.adduserId = &i
 	}
 }
 
-// AddedChatRecordId returns the value that was added to the "chatRecordId" field in this mutation.
-func (m *MessageStatusMutation) AddedChatRecordId() (r int, exists bool) {
-	v := m.addchatRecordId
+// AddedUserId returns the value that was added to the "userId" field in this mutation.
+func (m *MessageStatusMutation) AddedUserId() (r int, exists bool) {
+	v := m.adduserId
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetChatRecordId resets all changes to the "chatRecordId" field.
-func (m *MessageStatusMutation) ResetChatRecordId() {
-	m.chatRecordId = nil
-	m.addchatRecordId = nil
+// ResetUserId resets all changes to the "userId" field.
+func (m *MessageStatusMutation) ResetUserId() {
+	m.userId = nil
+	m.adduserId = nil
 }
 
-// SetStatus sets the "status" field.
-func (m *MessageStatusMutation) SetStatus(s string) {
-	m.status = &s
+// SetIsDelivered sets the "isDelivered" field.
+func (m *MessageStatusMutation) SetIsDelivered(b bool) {
+	m.isDelivered = &b
 }
 
-// Status returns the value of the "status" field in the mutation.
-func (m *MessageStatusMutation) Status() (r string, exists bool) {
-	v := m.status
+// IsDelivered returns the value of the "isDelivered" field in the mutation.
+func (m *MessageStatusMutation) IsDelivered() (r bool, exists bool) {
+	v := m.isDelivered
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldStatus returns the old "status" field's value of the MessageStatus entity.
+// OldIsDelivered returns the old "isDelivered" field's value of the MessageStatus entity.
 // If the MessageStatus object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MessageStatusMutation) OldStatus(ctx context.Context) (v string, err error) {
+func (m *MessageStatusMutation) OldIsDelivered(ctx context.Context) (v bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+		return v, errors.New("OldIsDelivered is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
+		return v, errors.New("OldIsDelivered requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+		return v, fmt.Errorf("querying old value for OldIsDelivered: %w", err)
 	}
-	return oldValue.Status, nil
+	return oldValue.IsDelivered, nil
 }
 
-// ResetStatus resets all changes to the "status" field.
-func (m *MessageStatusMutation) ResetStatus() {
-	m.status = nil
+// ResetIsDelivered resets all changes to the "isDelivered" field.
+func (m *MessageStatusMutation) ResetIsDelivered() {
+	m.isDelivered = nil
 }
 
-// SetFailReason sets the "failReason" field.
-func (m *MessageStatusMutation) SetFailReason(s string) {
-	m.failReason = &s
+// SetIsRead sets the "isRead" field.
+func (m *MessageStatusMutation) SetIsRead(b bool) {
+	m.isRead = &b
 }
 
-// FailReason returns the value of the "failReason" field in the mutation.
-func (m *MessageStatusMutation) FailReason() (r string, exists bool) {
-	v := m.failReason
+// IsRead returns the value of the "isRead" field in the mutation.
+func (m *MessageStatusMutation) IsRead() (r bool, exists bool) {
+	v := m.isRead
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldFailReason returns the old "failReason" field's value of the MessageStatus entity.
+// OldIsRead returns the old "isRead" field's value of the MessageStatus entity.
 // If the MessageStatus object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MessageStatusMutation) OldFailReason(ctx context.Context) (v string, err error) {
+func (m *MessageStatusMutation) OldIsRead(ctx context.Context) (v bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldFailReason is only allowed on UpdateOne operations")
+		return v, errors.New("OldIsRead is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldFailReason requires an ID field in the mutation")
+		return v, errors.New("OldIsRead requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldFailReason: %w", err)
+		return v, fmt.Errorf("querying old value for OldIsRead: %w", err)
 	}
-	return oldValue.FailReason, nil
+	return oldValue.IsRead, nil
 }
 
-// ClearFailReason clears the value of the "failReason" field.
-func (m *MessageStatusMutation) ClearFailReason() {
-	m.failReason = nil
-	m.clearedFields[messagestatus.FieldFailReason] = struct{}{}
+// ResetIsRead resets all changes to the "isRead" field.
+func (m *MessageStatusMutation) ResetIsRead() {
+	m.isRead = nil
 }
 
-// FailReasonCleared returns if the "failReason" field was cleared in this mutation.
-func (m *MessageStatusMutation) FailReasonCleared() bool {
-	_, ok := m.clearedFields[messagestatus.FieldFailReason]
+// SetDeliveredTime sets the "deliveredTime" field.
+func (m *MessageStatusMutation) SetDeliveredTime(t time.Time) {
+	m.deliveredTime = &t
+}
+
+// DeliveredTime returns the value of the "deliveredTime" field in the mutation.
+func (m *MessageStatusMutation) DeliveredTime() (r time.Time, exists bool) {
+	v := m.deliveredTime
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeliveredTime returns the old "deliveredTime" field's value of the MessageStatus entity.
+// If the MessageStatus object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MessageStatusMutation) OldDeliveredTime(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeliveredTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeliveredTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeliveredTime: %w", err)
+	}
+	return oldValue.DeliveredTime, nil
+}
+
+// ClearDeliveredTime clears the value of the "deliveredTime" field.
+func (m *MessageStatusMutation) ClearDeliveredTime() {
+	m.deliveredTime = nil
+	m.clearedFields[messagestatus.FieldDeliveredTime] = struct{}{}
+}
+
+// DeliveredTimeCleared returns if the "deliveredTime" field was cleared in this mutation.
+func (m *MessageStatusMutation) DeliveredTimeCleared() bool {
+	_, ok := m.clearedFields[messagestatus.FieldDeliveredTime]
 	return ok
 }
 
-// ResetFailReason resets all changes to the "failReason" field.
-func (m *MessageStatusMutation) ResetFailReason() {
-	m.failReason = nil
-	delete(m.clearedFields, messagestatus.FieldFailReason)
+// ResetDeliveredTime resets all changes to the "deliveredTime" field.
+func (m *MessageStatusMutation) ResetDeliveredTime() {
+	m.deliveredTime = nil
+	delete(m.clearedFields, messagestatus.FieldDeliveredTime)
 }
 
-// SetUpdateTime sets the "updateTime" field.
-func (m *MessageStatusMutation) SetUpdateTime(t time.Time) {
-	m.updateTime = &t
+// SetReadTime sets the "readTime" field.
+func (m *MessageStatusMutation) SetReadTime(t time.Time) {
+	m.readTime = &t
 }
 
-// UpdateTime returns the value of the "updateTime" field in the mutation.
-func (m *MessageStatusMutation) UpdateTime() (r time.Time, exists bool) {
-	v := m.updateTime
+// ReadTime returns the value of the "readTime" field in the mutation.
+func (m *MessageStatusMutation) ReadTime() (r time.Time, exists bool) {
+	v := m.readTime
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldUpdateTime returns the old "updateTime" field's value of the MessageStatus entity.
+// OldReadTime returns the old "readTime" field's value of the MessageStatus entity.
 // If the MessageStatus object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MessageStatusMutation) OldUpdateTime(ctx context.Context) (v time.Time, err error) {
+func (m *MessageStatusMutation) OldReadTime(ctx context.Context) (v *time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUpdateTime is only allowed on UpdateOne operations")
+		return v, errors.New("OldReadTime is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUpdateTime requires an ID field in the mutation")
+		return v, errors.New("OldReadTime requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUpdateTime: %w", err)
+		return v, fmt.Errorf("querying old value for OldReadTime: %w", err)
 	}
-	return oldValue.UpdateTime, nil
+	return oldValue.ReadTime, nil
 }
 
-// ResetUpdateTime resets all changes to the "updateTime" field.
-func (m *MessageStatusMutation) ResetUpdateTime() {
-	m.updateTime = nil
+// ClearReadTime clears the value of the "readTime" field.
+func (m *MessageStatusMutation) ClearReadTime() {
+	m.readTime = nil
+	m.clearedFields[messagestatus.FieldReadTime] = struct{}{}
+}
+
+// ReadTimeCleared returns if the "readTime" field was cleared in this mutation.
+func (m *MessageStatusMutation) ReadTimeCleared() bool {
+	_, ok := m.clearedFields[messagestatus.FieldReadTime]
+	return ok
+}
+
+// ResetReadTime resets all changes to the "readTime" field.
+func (m *MessageStatusMutation) ResetReadTime() {
+	m.readTime = nil
+	delete(m.clearedFields, messagestatus.FieldReadTime)
+}
+
+// SetCreateTime sets the "createTime" field.
+func (m *MessageStatusMutation) SetCreateTime(t time.Time) {
+	m.createTime = &t
+}
+
+// CreateTime returns the value of the "createTime" field in the mutation.
+func (m *MessageStatusMutation) CreateTime() (r time.Time, exists bool) {
+	v := m.createTime
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreateTime returns the old "createTime" field's value of the MessageStatus entity.
+// If the MessageStatus object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MessageStatusMutation) OldCreateTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreateTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreateTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreateTime: %w", err)
+	}
+	return oldValue.CreateTime, nil
+}
+
+// ResetCreateTime resets all changes to the "createTime" field.
+func (m *MessageStatusMutation) ResetCreateTime() {
+	m.createTime = nil
 }
 
 // Where appends a list predicates to the MessageStatusMutation builder.
@@ -4387,18 +4511,27 @@ func (m *MessageStatusMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MessageStatusMutation) Fields() []string {
-	fields := make([]string, 0, 4)
-	if m.chatRecordId != nil {
-		fields = append(fields, messagestatus.FieldChatRecordId)
+	fields := make([]string, 0, 7)
+	if m.msgId != nil {
+		fields = append(fields, messagestatus.FieldMsgId)
 	}
-	if m.status != nil {
-		fields = append(fields, messagestatus.FieldStatus)
+	if m.userId != nil {
+		fields = append(fields, messagestatus.FieldUserId)
 	}
-	if m.failReason != nil {
-		fields = append(fields, messagestatus.FieldFailReason)
+	if m.isDelivered != nil {
+		fields = append(fields, messagestatus.FieldIsDelivered)
 	}
-	if m.updateTime != nil {
-		fields = append(fields, messagestatus.FieldUpdateTime)
+	if m.isRead != nil {
+		fields = append(fields, messagestatus.FieldIsRead)
+	}
+	if m.deliveredTime != nil {
+		fields = append(fields, messagestatus.FieldDeliveredTime)
+	}
+	if m.readTime != nil {
+		fields = append(fields, messagestatus.FieldReadTime)
+	}
+	if m.createTime != nil {
+		fields = append(fields, messagestatus.FieldCreateTime)
 	}
 	return fields
 }
@@ -4408,14 +4541,20 @@ func (m *MessageStatusMutation) Fields() []string {
 // schema.
 func (m *MessageStatusMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case messagestatus.FieldChatRecordId:
-		return m.ChatRecordId()
-	case messagestatus.FieldStatus:
-		return m.Status()
-	case messagestatus.FieldFailReason:
-		return m.FailReason()
-	case messagestatus.FieldUpdateTime:
-		return m.UpdateTime()
+	case messagestatus.FieldMsgId:
+		return m.MsgId()
+	case messagestatus.FieldUserId:
+		return m.UserId()
+	case messagestatus.FieldIsDelivered:
+		return m.IsDelivered()
+	case messagestatus.FieldIsRead:
+		return m.IsRead()
+	case messagestatus.FieldDeliveredTime:
+		return m.DeliveredTime()
+	case messagestatus.FieldReadTime:
+		return m.ReadTime()
+	case messagestatus.FieldCreateTime:
+		return m.CreateTime()
 	}
 	return nil, false
 }
@@ -4425,14 +4564,20 @@ func (m *MessageStatusMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *MessageStatusMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case messagestatus.FieldChatRecordId:
-		return m.OldChatRecordId(ctx)
-	case messagestatus.FieldStatus:
-		return m.OldStatus(ctx)
-	case messagestatus.FieldFailReason:
-		return m.OldFailReason(ctx)
-	case messagestatus.FieldUpdateTime:
-		return m.OldUpdateTime(ctx)
+	case messagestatus.FieldMsgId:
+		return m.OldMsgId(ctx)
+	case messagestatus.FieldUserId:
+		return m.OldUserId(ctx)
+	case messagestatus.FieldIsDelivered:
+		return m.OldIsDelivered(ctx)
+	case messagestatus.FieldIsRead:
+		return m.OldIsRead(ctx)
+	case messagestatus.FieldDeliveredTime:
+		return m.OldDeliveredTime(ctx)
+	case messagestatus.FieldReadTime:
+		return m.OldReadTime(ctx)
+	case messagestatus.FieldCreateTime:
+		return m.OldCreateTime(ctx)
 	}
 	return nil, fmt.Errorf("unknown MessageStatus field %s", name)
 }
@@ -4442,33 +4587,54 @@ func (m *MessageStatusMutation) OldField(ctx context.Context, name string) (ent.
 // type.
 func (m *MessageStatusMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case messagestatus.FieldChatRecordId:
+	case messagestatus.FieldMsgId:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMsgId(v)
+		return nil
+	case messagestatus.FieldUserId:
 		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetChatRecordId(v)
+		m.SetUserId(v)
 		return nil
-	case messagestatus.FieldStatus:
-		v, ok := value.(string)
+	case messagestatus.FieldIsDelivered:
+		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetStatus(v)
+		m.SetIsDelivered(v)
 		return nil
-	case messagestatus.FieldFailReason:
-		v, ok := value.(string)
+	case messagestatus.FieldIsRead:
+		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetFailReason(v)
+		m.SetIsRead(v)
 		return nil
-	case messagestatus.FieldUpdateTime:
+	case messagestatus.FieldDeliveredTime:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetUpdateTime(v)
+		m.SetDeliveredTime(v)
+		return nil
+	case messagestatus.FieldReadTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReadTime(v)
+		return nil
+	case messagestatus.FieldCreateTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreateTime(v)
 		return nil
 	}
 	return fmt.Errorf("unknown MessageStatus field %s", name)
@@ -4478,8 +4644,8 @@ func (m *MessageStatusMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *MessageStatusMutation) AddedFields() []string {
 	var fields []string
-	if m.addchatRecordId != nil {
-		fields = append(fields, messagestatus.FieldChatRecordId)
+	if m.adduserId != nil {
+		fields = append(fields, messagestatus.FieldUserId)
 	}
 	return fields
 }
@@ -4489,8 +4655,8 @@ func (m *MessageStatusMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *MessageStatusMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
-	case messagestatus.FieldChatRecordId:
-		return m.AddedChatRecordId()
+	case messagestatus.FieldUserId:
+		return m.AddedUserId()
 	}
 	return nil, false
 }
@@ -4500,12 +4666,12 @@ func (m *MessageStatusMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *MessageStatusMutation) AddField(name string, value ent.Value) error {
 	switch name {
-	case messagestatus.FieldChatRecordId:
+	case messagestatus.FieldUserId:
 		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.AddChatRecordId(v)
+		m.AddUserId(v)
 		return nil
 	}
 	return fmt.Errorf("unknown MessageStatus numeric field %s", name)
@@ -4515,8 +4681,11 @@ func (m *MessageStatusMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *MessageStatusMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(messagestatus.FieldFailReason) {
-		fields = append(fields, messagestatus.FieldFailReason)
+	if m.FieldCleared(messagestatus.FieldDeliveredTime) {
+		fields = append(fields, messagestatus.FieldDeliveredTime)
+	}
+	if m.FieldCleared(messagestatus.FieldReadTime) {
+		fields = append(fields, messagestatus.FieldReadTime)
 	}
 	return fields
 }
@@ -4532,8 +4701,11 @@ func (m *MessageStatusMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *MessageStatusMutation) ClearField(name string) error {
 	switch name {
-	case messagestatus.FieldFailReason:
-		m.ClearFailReason()
+	case messagestatus.FieldDeliveredTime:
+		m.ClearDeliveredTime()
+		return nil
+	case messagestatus.FieldReadTime:
+		m.ClearReadTime()
 		return nil
 	}
 	return fmt.Errorf("unknown MessageStatus nullable field %s", name)
@@ -4543,17 +4715,26 @@ func (m *MessageStatusMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *MessageStatusMutation) ResetField(name string) error {
 	switch name {
-	case messagestatus.FieldChatRecordId:
-		m.ResetChatRecordId()
+	case messagestatus.FieldMsgId:
+		m.ResetMsgId()
 		return nil
-	case messagestatus.FieldStatus:
-		m.ResetStatus()
+	case messagestatus.FieldUserId:
+		m.ResetUserId()
 		return nil
-	case messagestatus.FieldFailReason:
-		m.ResetFailReason()
+	case messagestatus.FieldIsDelivered:
+		m.ResetIsDelivered()
 		return nil
-	case messagestatus.FieldUpdateTime:
-		m.ResetUpdateTime()
+	case messagestatus.FieldIsRead:
+		m.ResetIsRead()
+		return nil
+	case messagestatus.FieldDeliveredTime:
+		m.ResetDeliveredTime()
+		return nil
+	case messagestatus.FieldReadTime:
+		m.ResetReadTime()
+		return nil
+	case messagestatus.FieldCreateTime:
+		m.ResetCreateTime()
 		return nil
 	}
 	return fmt.Errorf("unknown MessageStatus field %s", name)

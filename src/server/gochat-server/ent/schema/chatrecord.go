@@ -5,6 +5,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 // ChatRecord holds the schema definition for the ChatRecord entity.
@@ -28,4 +29,18 @@ func (ChatRecord) Fields() []ent.Field {
 // Edges of the ChatRecord.
 func (ChatRecord) Edges() []ent.Edge {
 	return nil
+}
+
+// Indexes of the ChatRecord.
+func (ChatRecord) Indexes() []ent.Index {
+	return []ent.Index{
+		// 消息ID索引，用于快速查找消息
+		index.Fields("msgId").Unique(),
+		// 发送者和接收者组合索引，用于查询聊天历史
+		index.Fields("fromUserId", "toUserId"),
+		// 接收者和创建时间索引，用于查询用户收到的消息
+		index.Fields("toUserId", "createTime"),
+		// 群聊ID和创建时间索引，用于查询群聊历史
+		index.Fields("groupId", "createTime"),
+	}
 }

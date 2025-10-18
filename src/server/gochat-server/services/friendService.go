@@ -112,6 +112,10 @@ func AcceptFriendRequest(requestId int) error {
 		return errors.New("创建好友关系失败")
 	}
 
+	// 使好友列表缓存失效
+	_ = InvalidateFriendListCache(request.FromUserId)
+	_ = InvalidateFriendListCache(request.ToUserId)
+
 	return nil
 }
 
@@ -139,8 +143,14 @@ func RejectFriendRequest(requestId int) error {
 	return nil
 }
 
-// GetFriendList 获取好友列表
+// GetFriendList 获取好友列表（带缓存）
 func GetFriendList(userId int) ([]*ent.User, error) {
+	// 尝试从缓存获取
+	friends, found := GetCachedFriendList(userId)
+	if found {
+		return friends, nil
+	}
+
 	// 查询用户的所有好友关系
 	relationships, err := db.FriendRelationship.Query().
 		Where(friendrelationship.UserId(userId)).
@@ -162,13 +172,16 @@ func GetFriendList(userId int) ([]*ent.User, error) {
 	}
 
 	// 查询好友用户信息
-	friends, err := db.User.Query().
+	friends, err = db.User.Query().
 		Where(user.IDIn(friendIds...)).
 		All(context.TODO())
 
 	if err != nil {
 		return nil, errors.New("查询好友信息失败")
 	}
+
+	// 写入缓存
+	_ = CacheFriendList(userId, friends)
 
 	return friends, nil
 }
@@ -236,6 +249,10 @@ func DeleteFriend(userId, friendId int) error {
 		return errors.New("删除好友关系失败")
 	}
 
+	// 使好友列表缓存失效
+	_ = InvalidateFriendListCache(userId)
+	_ = InvalidateFriendListCache(friendId)
+
 	return nil
 }
 
@@ -255,36 +272,43 @@ func IsFriend(userId, friendId int) (bool, error) {
 	return count > 0, nil
 }
 
-// GetFriendRequestWithUsers 获取好友请求及相关用户信息
-type FriendRequestWithUsers struct {
-	Request  *ent.FriendRequest `json:"request"`
-	FromUser *ent.User          `json:"fromUser"`
-	ToUser   *ent.User          `json:"toUser"`
+// FriendRequestResponse 好友请求响应结构（符合客户端期望）
+type FriendRequestResponse struct {
+	ID               int    `json:"id"`
+	FromUserId       int    `json:"fromUserId"`
+	ToUserId         int    `json:"toUserId"`
+	Remark           string `json:"remark"`
+	Status           int    `json:"status"`
+	CreateTime       string `json:"createTime"`
+	FromUserNickname string `json:"fromUserNickname"`
+	FromUserAvatar   string `json:"fromUserAvatar"`
 }
 
-func GetFriendRequestsWithUsers(userId int) ([]*FriendRequestWithUsers, error) {
+func GetFriendRequestsWithUsers(userId int) ([]*FriendRequestResponse, error) {
 	requests, err := GetFriendRequests(userId)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]*FriendRequestWithUsers, len(requests))
-	for i, req := range requests {
+	result := make([]*FriendRequestResponse, 0, len(requests))
+	for _, req := range requests {
 		fromUser, err := db.User.Get(context.TODO(), req.FromUserId)
 		if err != nil {
-			continue
+			continue // 跳过无法获取用户信息的请求
 		}
 
-		toUser, err := db.User.Get(context.TODO(), req.ToUserId)
-		if err != nil {
-			continue
+		response := &FriendRequestResponse{
+			ID:               req.ID,
+			FromUserId:       req.FromUserId,
+			ToUserId:         req.ToUserId,
+			Remark:           req.Remark,
+			Status:           req.Status,
+			CreateTime:       req.CreateTime.Format("2006-01-02T15:04:05Z07:00"),
+			FromUserNickname: fromUser.Nickname,
+			FromUserAvatar:   "", // 暂时为空，后续可以添加头像功能
 		}
 
-		result[i] = &FriendRequestWithUsers{
-			Request:  req,
-			FromUser: fromUser,
-			ToUser:   toUser,
-		}
+		result = append(result, response)
 	}
 
 	return result, nil

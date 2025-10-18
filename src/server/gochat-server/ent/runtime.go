@@ -111,14 +111,22 @@ func init() {
 	message.DefaultCreateTime = messageDescCreateTime.Default.(func() time.Time)
 	messagestatusFields := schema.MessageStatus{}.Fields()
 	_ = messagestatusFields
-	// messagestatusDescStatus is the schema descriptor for status field.
-	messagestatusDescStatus := messagestatusFields[1].Descriptor()
-	// messagestatus.StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	messagestatus.StatusValidator = messagestatusDescStatus.Validators[0].(func(string) error)
-	// messagestatusDescUpdateTime is the schema descriptor for updateTime field.
-	messagestatusDescUpdateTime := messagestatusFields[3].Descriptor()
-	// messagestatus.DefaultUpdateTime holds the default value on creation for the updateTime field.
-	messagestatus.DefaultUpdateTime = messagestatusDescUpdateTime.Default.(func() time.Time)
+	// messagestatusDescMsgId is the schema descriptor for msgId field.
+	messagestatusDescMsgId := messagestatusFields[0].Descriptor()
+	// messagestatus.MsgIdValidator is a validator for the "msgId" field. It is called by the builders before save.
+	messagestatus.MsgIdValidator = messagestatusDescMsgId.Validators[0].(func(string) error)
+	// messagestatusDescIsDelivered is the schema descriptor for isDelivered field.
+	messagestatusDescIsDelivered := messagestatusFields[2].Descriptor()
+	// messagestatus.DefaultIsDelivered holds the default value on creation for the isDelivered field.
+	messagestatus.DefaultIsDelivered = messagestatusDescIsDelivered.Default.(bool)
+	// messagestatusDescIsRead is the schema descriptor for isRead field.
+	messagestatusDescIsRead := messagestatusFields[3].Descriptor()
+	// messagestatus.DefaultIsRead holds the default value on creation for the isRead field.
+	messagestatus.DefaultIsRead = messagestatusDescIsRead.Default.(bool)
+	// messagestatusDescCreateTime is the schema descriptor for createTime field.
+	messagestatusDescCreateTime := messagestatusFields[6].Descriptor()
+	// messagestatus.DefaultCreateTime holds the default value on creation for the createTime field.
+	messagestatus.DefaultCreateTime = messagestatusDescCreateTime.Default.(func() time.Time)
 	textmessageFields := schema.TextMessage{}.Fields()
 	_ = textmessageFields
 	// textmessageDescMsgId is the schema descriptor for msgId field.

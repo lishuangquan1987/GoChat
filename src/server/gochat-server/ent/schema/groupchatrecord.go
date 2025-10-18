@@ -5,6 +5,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 // GroupChatRecord holds the schema definition for the GroupChatRecord entity.
@@ -26,4 +27,14 @@ func (GroupChatRecord) Fields() []ent.Field {
 // Edges of the GroupChatRecord.
 func (GroupChatRecord) Edges() []ent.Edge {
 	return nil
+}
+
+// Indexes of the GroupChatRecord.
+func (GroupChatRecord) Indexes() []ent.Index {
+	return []ent.Index{
+		// 消息ID索引，用于快速查找消息
+		index.Fields("msgId").Unique(),
+		// 群组ID和创建时间索引，用于查询群聊历史
+		index.Fields("groupId", "createTime"),
+	}
 }

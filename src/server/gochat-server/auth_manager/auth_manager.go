@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/nalgeon/redka"
 	"golang.org/x/crypto/bcrypt"
 )

@@ -17,14 +17,20 @@ type MessageStatus struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// 消息记录ID，关联ChatRecord
-	ChatRecordId int `json:"chatRecordId,omitempty"`
-	// 状态：待发送/发送成功/发送失败/已读
-	Status string `json:"status,omitempty"`
-	// 失败原因
-	FailReason string `json:"failReason,omitempty"`
-	// 状态更新时间
-	UpdateTime   time.Time `json:"updateTime,omitempty"`
+	// 消息ID
+	MsgId string `json:"msgId,omitempty"`
+	// 用户ID
+	UserId int `json:"userId,omitempty"`
+	// 是否已送达
+	IsDelivered bool `json:"isDelivered,omitempty"`
+	// 是否已读
+	IsRead bool `json:"isRead,omitempty"`
+	// 送达时间
+	DeliveredTime *time.Time `json:"deliveredTime,omitempty"`
+	// 已读时间
+	ReadTime *time.Time `json:"readTime,omitempty"`
+	// 创建时间
+	CreateTime   time.Time `json:"createTime,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -33,11 +39,13 @@ func (*MessageStatus) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case messagestatus.FieldID, messagestatus.FieldChatRecordId:
+		case messagestatus.FieldIsDelivered, messagestatus.FieldIsRead:
+			values[i] = new(sql.NullBool)
+		case messagestatus.FieldID, messagestatus.FieldUserId:
 			values[i] = new(sql.NullInt64)
-		case messagestatus.FieldStatus, messagestatus.FieldFailReason:
+		case messagestatus.FieldMsgId:
 			values[i] = new(sql.NullString)
-		case messagestatus.FieldUpdateTime:
+		case messagestatus.FieldDeliveredTime, messagestatus.FieldReadTime, messagestatus.FieldCreateTime:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -60,29 +68,49 @@ func (ms *MessageStatus) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			ms.ID = int(value.Int64)
-		case messagestatus.FieldChatRecordId:
+		case messagestatus.FieldMsgId:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field msgId", values[i])
+			} else if value.Valid {
+				ms.MsgId = value.String
+			}
+		case messagestatus.FieldUserId:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field chatRecordId", values[i])
+				return fmt.Errorf("unexpected type %T for field userId", values[i])
 			} else if value.Valid {
-				ms.ChatRecordId = int(value.Int64)
+				ms.UserId = int(value.Int64)
 			}
-		case messagestatus.FieldStatus:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
+		case messagestatus.FieldIsDelivered:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field isDelivered", values[i])
 			} else if value.Valid {
-				ms.Status = value.String
+				ms.IsDelivered = value.Bool
 			}
-		case messagestatus.FieldFailReason:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field failReason", values[i])
+		case messagestatus.FieldIsRead:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field isRead", values[i])
 			} else if value.Valid {
-				ms.FailReason = value.String
+				ms.IsRead = value.Bool
 			}
-		case messagestatus.FieldUpdateTime:
+		case messagestatus.FieldDeliveredTime:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field updateTime", values[i])
+				return fmt.Errorf("unexpected type %T for field deliveredTime", values[i])
 			} else if value.Valid {
-				ms.UpdateTime = value.Time
+				ms.DeliveredTime = new(time.Time)
+				*ms.DeliveredTime = value.Time
+			}
+		case messagestatus.FieldReadTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field readTime", values[i])
+			} else if value.Valid {
+				ms.ReadTime = new(time.Time)
+				*ms.ReadTime = value.Time
+			}
+		case messagestatus.FieldCreateTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field createTime", values[i])
+			} else if value.Valid {
+				ms.CreateTime = value.Time
 			}
 		default:
 			ms.selectValues.Set(columns[i], values[i])
@@ -120,17 +148,30 @@ func (ms *MessageStatus) String() string {
 	var builder strings.Builder
 	builder.WriteString("MessageStatus(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", ms.ID))
-	builder.WriteString("chatRecordId=")
-	builder.WriteString(fmt.Sprintf("%v", ms.ChatRecordId))
+	builder.WriteString("msgId=")
+	builder.WriteString(ms.MsgId)
 	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(ms.Status)
+	builder.WriteString("userId=")
+	builder.WriteString(fmt.Sprintf("%v", ms.UserId))
 	builder.WriteString(", ")
-	builder.WriteString("failReason=")
-	builder.WriteString(ms.FailReason)
+	builder.WriteString("isDelivered=")
+	builder.WriteString(fmt.Sprintf("%v", ms.IsDelivered))
 	builder.WriteString(", ")
-	builder.WriteString("updateTime=")
-	builder.WriteString(ms.UpdateTime.Format(time.ANSIC))
+	builder.WriteString("isRead=")
+	builder.WriteString(fmt.Sprintf("%v", ms.IsRead))
+	builder.WriteString(", ")
+	if v := ms.DeliveredTime; v != nil {
+		builder.WriteString("deliveredTime=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := ms.ReadTime; v != nil {
+		builder.WriteString("readTime=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("createTime=")
+	builder.WriteString(ms.CreateTime.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

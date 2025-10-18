@@ -74,12 +74,23 @@ func Login(username, password string) (*LoginResponse, error) {
 	}, nil
 }
 
-// GetUserByID 根据ID获取用户信息
+// GetUserByID 根据ID获取用户信息（带缓存）
 func GetUserByID(userId int) (*ent.User, error) {
-	user, err := db.User.Get(context.TODO(), userId)
+	// 尝试从缓存获取
+	user, err := GetUserByIDWithCache(userId)
+	if err == nil {
+		return user, nil
+	}
+
+	// 缓存未命中，从数据库获取
+	user, err = db.User.Get(context.TODO(), userId)
 	if err != nil {
 		return nil, errors.New("用户不存在")
 	}
+
+	// 写入缓存
+	_ = CacheUser(user)
+
 	return user, nil
 }
 
@@ -92,6 +103,10 @@ func UpdateUser(userId int, nickname string, sex int) (*ent.User, error) {
 	if err != nil {
 		return nil, errors.New("更新用户信息失败")
 	}
+
+	// 使缓存失效
+	_ = InvalidateUserCache(userId)
+
 	return user, nil
 }
 

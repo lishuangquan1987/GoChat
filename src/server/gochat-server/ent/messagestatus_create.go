@@ -20,42 +20,84 @@ type MessageStatusCreate struct {
 	hooks    []Hook
 }
 
-// SetChatRecordId sets the "chatRecordId" field.
-func (msc *MessageStatusCreate) SetChatRecordId(i int) *MessageStatusCreate {
-	msc.mutation.SetChatRecordId(i)
+// SetMsgId sets the "msgId" field.
+func (msc *MessageStatusCreate) SetMsgId(s string) *MessageStatusCreate {
+	msc.mutation.SetMsgId(s)
 	return msc
 }
 
-// SetStatus sets the "status" field.
-func (msc *MessageStatusCreate) SetStatus(s string) *MessageStatusCreate {
-	msc.mutation.SetStatus(s)
+// SetUserId sets the "userId" field.
+func (msc *MessageStatusCreate) SetUserId(i int) *MessageStatusCreate {
+	msc.mutation.SetUserId(i)
 	return msc
 }
 
-// SetFailReason sets the "failReason" field.
-func (msc *MessageStatusCreate) SetFailReason(s string) *MessageStatusCreate {
-	msc.mutation.SetFailReason(s)
+// SetIsDelivered sets the "isDelivered" field.
+func (msc *MessageStatusCreate) SetIsDelivered(b bool) *MessageStatusCreate {
+	msc.mutation.SetIsDelivered(b)
 	return msc
 }
 
-// SetNillableFailReason sets the "failReason" field if the given value is not nil.
-func (msc *MessageStatusCreate) SetNillableFailReason(s *string) *MessageStatusCreate {
-	if s != nil {
-		msc.SetFailReason(*s)
+// SetNillableIsDelivered sets the "isDelivered" field if the given value is not nil.
+func (msc *MessageStatusCreate) SetNillableIsDelivered(b *bool) *MessageStatusCreate {
+	if b != nil {
+		msc.SetIsDelivered(*b)
 	}
 	return msc
 }
 
-// SetUpdateTime sets the "updateTime" field.
-func (msc *MessageStatusCreate) SetUpdateTime(t time.Time) *MessageStatusCreate {
-	msc.mutation.SetUpdateTime(t)
+// SetIsRead sets the "isRead" field.
+func (msc *MessageStatusCreate) SetIsRead(b bool) *MessageStatusCreate {
+	msc.mutation.SetIsRead(b)
 	return msc
 }
 
-// SetNillableUpdateTime sets the "updateTime" field if the given value is not nil.
-func (msc *MessageStatusCreate) SetNillableUpdateTime(t *time.Time) *MessageStatusCreate {
+// SetNillableIsRead sets the "isRead" field if the given value is not nil.
+func (msc *MessageStatusCreate) SetNillableIsRead(b *bool) *MessageStatusCreate {
+	if b != nil {
+		msc.SetIsRead(*b)
+	}
+	return msc
+}
+
+// SetDeliveredTime sets the "deliveredTime" field.
+func (msc *MessageStatusCreate) SetDeliveredTime(t time.Time) *MessageStatusCreate {
+	msc.mutation.SetDeliveredTime(t)
+	return msc
+}
+
+// SetNillableDeliveredTime sets the "deliveredTime" field if the given value is not nil.
+func (msc *MessageStatusCreate) SetNillableDeliveredTime(t *time.Time) *MessageStatusCreate {
 	if t != nil {
-		msc.SetUpdateTime(*t)
+		msc.SetDeliveredTime(*t)
+	}
+	return msc
+}
+
+// SetReadTime sets the "readTime" field.
+func (msc *MessageStatusCreate) SetReadTime(t time.Time) *MessageStatusCreate {
+	msc.mutation.SetReadTime(t)
+	return msc
+}
+
+// SetNillableReadTime sets the "readTime" field if the given value is not nil.
+func (msc *MessageStatusCreate) SetNillableReadTime(t *time.Time) *MessageStatusCreate {
+	if t != nil {
+		msc.SetReadTime(*t)
+	}
+	return msc
+}
+
+// SetCreateTime sets the "createTime" field.
+func (msc *MessageStatusCreate) SetCreateTime(t time.Time) *MessageStatusCreate {
+	msc.mutation.SetCreateTime(t)
+	return msc
+}
+
+// SetNillableCreateTime sets the "createTime" field if the given value is not nil.
+func (msc *MessageStatusCreate) SetNillableCreateTime(t *time.Time) *MessageStatusCreate {
+	if t != nil {
+		msc.SetCreateTime(*t)
 	}
 	return msc
 }
@@ -95,27 +137,41 @@ func (msc *MessageStatusCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (msc *MessageStatusCreate) defaults() {
-	if _, ok := msc.mutation.UpdateTime(); !ok {
-		v := messagestatus.DefaultUpdateTime()
-		msc.mutation.SetUpdateTime(v)
+	if _, ok := msc.mutation.IsDelivered(); !ok {
+		v := messagestatus.DefaultIsDelivered
+		msc.mutation.SetIsDelivered(v)
+	}
+	if _, ok := msc.mutation.IsRead(); !ok {
+		v := messagestatus.DefaultIsRead
+		msc.mutation.SetIsRead(v)
+	}
+	if _, ok := msc.mutation.CreateTime(); !ok {
+		v := messagestatus.DefaultCreateTime()
+		msc.mutation.SetCreateTime(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (msc *MessageStatusCreate) check() error {
-	if _, ok := msc.mutation.ChatRecordId(); !ok {
-		return &ValidationError{Name: "chatRecordId", err: errors.New(`ent: missing required field "MessageStatus.chatRecordId"`)}
+	if _, ok := msc.mutation.MsgId(); !ok {
+		return &ValidationError{Name: "msgId", err: errors.New(`ent: missing required field "MessageStatus.msgId"`)}
 	}
-	if _, ok := msc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "MessageStatus.status"`)}
-	}
-	if v, ok := msc.mutation.Status(); ok {
-		if err := messagestatus.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "MessageStatus.status": %w`, err)}
+	if v, ok := msc.mutation.MsgId(); ok {
+		if err := messagestatus.MsgIdValidator(v); err != nil {
+			return &ValidationError{Name: "msgId", err: fmt.Errorf(`ent: validator failed for field "MessageStatus.msgId": %w`, err)}
 		}
 	}
-	if _, ok := msc.mutation.UpdateTime(); !ok {
-		return &ValidationError{Name: "updateTime", err: errors.New(`ent: missing required field "MessageStatus.updateTime"`)}
+	if _, ok := msc.mutation.UserId(); !ok {
+		return &ValidationError{Name: "userId", err: errors.New(`ent: missing required field "MessageStatus.userId"`)}
+	}
+	if _, ok := msc.mutation.IsDelivered(); !ok {
+		return &ValidationError{Name: "isDelivered", err: errors.New(`ent: missing required field "MessageStatus.isDelivered"`)}
+	}
+	if _, ok := msc.mutation.IsRead(); !ok {
+		return &ValidationError{Name: "isRead", err: errors.New(`ent: missing required field "MessageStatus.isRead"`)}
+	}
+	if _, ok := msc.mutation.CreateTime(); !ok {
+		return &ValidationError{Name: "createTime", err: errors.New(`ent: missing required field "MessageStatus.createTime"`)}
 	}
 	return nil
 }
@@ -143,21 +199,33 @@ func (msc *MessageStatusCreate) createSpec() (*MessageStatus, *sqlgraph.CreateSp
 		_node = &MessageStatus{config: msc.config}
 		_spec = sqlgraph.NewCreateSpec(messagestatus.Table, sqlgraph.NewFieldSpec(messagestatus.FieldID, field.TypeInt))
 	)
-	if value, ok := msc.mutation.ChatRecordId(); ok {
-		_spec.SetField(messagestatus.FieldChatRecordId, field.TypeInt, value)
-		_node.ChatRecordId = value
+	if value, ok := msc.mutation.MsgId(); ok {
+		_spec.SetField(messagestatus.FieldMsgId, field.TypeString, value)
+		_node.MsgId = value
 	}
-	if value, ok := msc.mutation.Status(); ok {
-		_spec.SetField(messagestatus.FieldStatus, field.TypeString, value)
-		_node.Status = value
+	if value, ok := msc.mutation.UserId(); ok {
+		_spec.SetField(messagestatus.FieldUserId, field.TypeInt, value)
+		_node.UserId = value
 	}
-	if value, ok := msc.mutation.FailReason(); ok {
-		_spec.SetField(messagestatus.FieldFailReason, field.TypeString, value)
-		_node.FailReason = value
+	if value, ok := msc.mutation.IsDelivered(); ok {
+		_spec.SetField(messagestatus.FieldIsDelivered, field.TypeBool, value)
+		_node.IsDelivered = value
 	}
-	if value, ok := msc.mutation.UpdateTime(); ok {
-		_spec.SetField(messagestatus.FieldUpdateTime, field.TypeTime, value)
-		_node.UpdateTime = value
+	if value, ok := msc.mutation.IsRead(); ok {
+		_spec.SetField(messagestatus.FieldIsRead, field.TypeBool, value)
+		_node.IsRead = value
+	}
+	if value, ok := msc.mutation.DeliveredTime(); ok {
+		_spec.SetField(messagestatus.FieldDeliveredTime, field.TypeTime, value)
+		_node.DeliveredTime = &value
+	}
+	if value, ok := msc.mutation.ReadTime(); ok {
+		_spec.SetField(messagestatus.FieldReadTime, field.TypeTime, value)
+		_node.ReadTime = &value
+	}
+	if value, ok := msc.mutation.CreateTime(); ok {
+		_spec.SetField(messagestatus.FieldCreateTime, field.TypeTime, value)
+		_node.CreateTime = value
 	}
 	return _node, _spec
 }

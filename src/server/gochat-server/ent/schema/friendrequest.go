@@ -5,6 +5,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 // FriendRequest holds the schema definition for the FriendRequest entity.
@@ -26,4 +27,14 @@ func (FriendRequest) Fields() []ent.Field {
 // Edges of the FriendRequest.
 func (FriendRequest) Edges() []ent.Edge {
 	return nil
+}
+
+// Indexes of the FriendRequest.
+func (FriendRequest) Indexes() []ent.Index {
+	return []ent.Index{
+		// 接收者ID和状态索引，用于查询待处理的好友请求
+		index.Fields("toUserId", "status"),
+		// 发送者和接收者组合索引，防止重复请求
+		index.Fields("fromUserId", "toUserId"),
+	}
 }
