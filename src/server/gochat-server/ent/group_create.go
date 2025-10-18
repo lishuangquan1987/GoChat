@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"gochat_server/ent/group"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -32,26 +33,34 @@ func (gc *GroupCreate) SetGroupName(s string) *GroupCreate {
 }
 
 // SetOwnerId sets the "ownerId" field.
-func (gc *GroupCreate) SetOwnerId(s string) *GroupCreate {
-	gc.mutation.SetOwnerId(s)
+func (gc *GroupCreate) SetOwnerId(i int) *GroupCreate {
+	gc.mutation.SetOwnerId(i)
 	return gc
 }
 
 // SetCreateUserId sets the "createUserId" field.
-func (gc *GroupCreate) SetCreateUserId(s string) *GroupCreate {
-	gc.mutation.SetCreateUserId(s)
+func (gc *GroupCreate) SetCreateUserId(i int) *GroupCreate {
+	gc.mutation.SetCreateUserId(i)
 	return gc
 }
 
 // SetCreateTime sets the "createTime" field.
-func (gc *GroupCreate) SetCreateTime(s string) *GroupCreate {
-	gc.mutation.SetCreateTime(s)
+func (gc *GroupCreate) SetCreateTime(t time.Time) *GroupCreate {
+	gc.mutation.SetCreateTime(t)
+	return gc
+}
+
+// SetNillableCreateTime sets the "createTime" field if the given value is not nil.
+func (gc *GroupCreate) SetNillableCreateTime(t *time.Time) *GroupCreate {
+	if t != nil {
+		gc.SetCreateTime(*t)
+	}
 	return gc
 }
 
 // SetMembers sets the "members" field.
-func (gc *GroupCreate) SetMembers(s []string) *GroupCreate {
-	gc.mutation.SetMembers(s)
+func (gc *GroupCreate) SetMembers(i []int) *GroupCreate {
+	gc.mutation.SetMembers(i)
 	return gc
 }
 
@@ -62,6 +71,7 @@ func (gc *GroupCreate) Mutation() *GroupMutation {
 
 // Save creates the Group in the database.
 func (gc *GroupCreate) Save(ctx context.Context) (*Group, error) {
+	gc.defaults()
 	return withHooks(ctx, gc.sqlSave, gc.mutation, gc.hooks)
 }
 
@@ -87,6 +97,14 @@ func (gc *GroupCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (gc *GroupCreate) defaults() {
+	if _, ok := gc.mutation.CreateTime(); !ok {
+		v := group.DefaultCreateTime()
+		gc.mutation.SetCreateTime(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (gc *GroupCreate) check() error {
 	if _, ok := gc.mutation.GroupId(); !ok {
@@ -108,26 +126,11 @@ func (gc *GroupCreate) check() error {
 	if _, ok := gc.mutation.OwnerId(); !ok {
 		return &ValidationError{Name: "ownerId", err: errors.New(`ent: missing required field "Group.ownerId"`)}
 	}
-	if v, ok := gc.mutation.OwnerId(); ok {
-		if err := group.OwnerIdValidator(v); err != nil {
-			return &ValidationError{Name: "ownerId", err: fmt.Errorf(`ent: validator failed for field "Group.ownerId": %w`, err)}
-		}
-	}
 	if _, ok := gc.mutation.CreateUserId(); !ok {
 		return &ValidationError{Name: "createUserId", err: errors.New(`ent: missing required field "Group.createUserId"`)}
 	}
-	if v, ok := gc.mutation.CreateUserId(); ok {
-		if err := group.CreateUserIdValidator(v); err != nil {
-			return &ValidationError{Name: "createUserId", err: fmt.Errorf(`ent: validator failed for field "Group.createUserId": %w`, err)}
-		}
-	}
 	if _, ok := gc.mutation.CreateTime(); !ok {
 		return &ValidationError{Name: "createTime", err: errors.New(`ent: missing required field "Group.createTime"`)}
-	}
-	if v, ok := gc.mutation.CreateTime(); ok {
-		if err := group.CreateTimeValidator(v); err != nil {
-			return &ValidationError{Name: "createTime", err: fmt.Errorf(`ent: validator failed for field "Group.createTime": %w`, err)}
-		}
 	}
 	if _, ok := gc.mutation.Members(); !ok {
 		return &ValidationError{Name: "members", err: errors.New(`ent: missing required field "Group.members"`)}
@@ -167,15 +170,15 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_node.GroupName = value
 	}
 	if value, ok := gc.mutation.OwnerId(); ok {
-		_spec.SetField(group.FieldOwnerId, field.TypeString, value)
+		_spec.SetField(group.FieldOwnerId, field.TypeInt, value)
 		_node.OwnerId = value
 	}
 	if value, ok := gc.mutation.CreateUserId(); ok {
-		_spec.SetField(group.FieldCreateUserId, field.TypeString, value)
+		_spec.SetField(group.FieldCreateUserId, field.TypeInt, value)
 		_node.CreateUserId = value
 	}
 	if value, ok := gc.mutation.CreateTime(); ok {
-		_spec.SetField(group.FieldCreateTime, field.TypeString, value)
+		_spec.SetField(group.FieldCreateTime, field.TypeTime, value)
 		_node.CreateTime = value
 	}
 	if value, ok := gc.mutation.Members(); ok {
@@ -203,6 +206,7 @@ func (gcb *GroupCreateBulk) Save(ctx context.Context) ([]*Group, error) {
 	for i := range gcb.builders {
 		func(i int, root context.Context) {
 			builder := gcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*GroupMutation)
 				if !ok {

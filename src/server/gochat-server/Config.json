@@ -1,4 +1,14 @@
 {
-    "DBType":"postgres",
-    "ConnectionString":"host=localhost port=5432 user=postgres dbname=gochat password=123456"
+    "DBType": "postgres",
+    "ConnectionString": "host=localhost port=5432 user=postgres dbname=gochat password=123456 sslmode=disable",
+    "MinIO": {
+        "Endpoint": "localhost:9000",
+        "AccessKey": "minioadmin",
+        "SecretKey": "minioadmin",
+        "BucketName": "gochat",
+        "UseSSL": false
+    },
+    "Server": {
+        "Port": "8080"
+    }
 }

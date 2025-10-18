@@ -262,7 +262,7 @@ func (frq *FriendRelationshipQuery) Clone() *FriendRelationshipQuery {
 // Example:
 //
 //	var v []struct {
-//		UserId string `json:"userId,omitempty"`
+//		UserId int `json:"userId,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -285,7 +285,7 @@ func (frq *FriendRelationshipQuery) GroupBy(field string, fields ...string) *Fri
 // Example:
 //
 //	var v []struct {
-//		UserId string `json:"userId,omitempty"`
+//		UserId int `json:"userId,omitempty"`
 //	}
 //
 //	client.FriendRelationship.Query().

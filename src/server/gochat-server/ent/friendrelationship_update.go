@@ -28,30 +28,44 @@ func (fru *FriendRelationshipUpdate) Where(ps ...predicate.FriendRelationship) *
 }
 
 // SetUserId sets the "userId" field.
-func (fru *FriendRelationshipUpdate) SetUserId(s string) *FriendRelationshipUpdate {
-	fru.mutation.SetUserId(s)
+func (fru *FriendRelationshipUpdate) SetUserId(i int) *FriendRelationshipUpdate {
+	fru.mutation.ResetUserId()
+	fru.mutation.SetUserId(i)
 	return fru
 }
 
 // SetNillableUserId sets the "userId" field if the given value is not nil.
-func (fru *FriendRelationshipUpdate) SetNillableUserId(s *string) *FriendRelationshipUpdate {
-	if s != nil {
-		fru.SetUserId(*s)
+func (fru *FriendRelationshipUpdate) SetNillableUserId(i *int) *FriendRelationshipUpdate {
+	if i != nil {
+		fru.SetUserId(*i)
 	}
+	return fru
+}
+
+// AddUserId adds i to the "userId" field.
+func (fru *FriendRelationshipUpdate) AddUserId(i int) *FriendRelationshipUpdate {
+	fru.mutation.AddUserId(i)
 	return fru
 }
 
 // SetFriendId sets the "friendId" field.
-func (fru *FriendRelationshipUpdate) SetFriendId(s string) *FriendRelationshipUpdate {
-	fru.mutation.SetFriendId(s)
+func (fru *FriendRelationshipUpdate) SetFriendId(i int) *FriendRelationshipUpdate {
+	fru.mutation.ResetFriendId()
+	fru.mutation.SetFriendId(i)
 	return fru
 }
 
 // SetNillableFriendId sets the "friendId" field if the given value is not nil.
-func (fru *FriendRelationshipUpdate) SetNillableFriendId(s *string) *FriendRelationshipUpdate {
-	if s != nil {
-		fru.SetFriendId(*s)
+func (fru *FriendRelationshipUpdate) SetNillableFriendId(i *int) *FriendRelationshipUpdate {
+	if i != nil {
+		fru.SetFriendId(*i)
 	}
+	return fru
+}
+
+// AddFriendId adds i to the "friendId" field.
+func (fru *FriendRelationshipUpdate) AddFriendId(i int) *FriendRelationshipUpdate {
+	fru.mutation.AddFriendId(i)
 	return fru
 }
 
@@ -87,25 +101,7 @@ func (fru *FriendRelationshipUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (fru *FriendRelationshipUpdate) check() error {
-	if v, ok := fru.mutation.UserId(); ok {
-		if err := friendrelationship.UserIdValidator(v); err != nil {
-			return &ValidationError{Name: "userId", err: fmt.Errorf(`ent: validator failed for field "FriendRelationship.userId": %w`, err)}
-		}
-	}
-	if v, ok := fru.mutation.FriendId(); ok {
-		if err := friendrelationship.FriendIdValidator(v); err != nil {
-			return &ValidationError{Name: "friendId", err: fmt.Errorf(`ent: validator failed for field "FriendRelationship.friendId": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (fru *FriendRelationshipUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := fru.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(friendrelationship.Table, friendrelationship.Columns, sqlgraph.NewFieldSpec(friendrelationship.FieldID, field.TypeInt))
 	if ps := fru.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -115,10 +111,16 @@ func (fru *FriendRelationshipUpdate) sqlSave(ctx context.Context) (n int, err er
 		}
 	}
 	if value, ok := fru.mutation.UserId(); ok {
-		_spec.SetField(friendrelationship.FieldUserId, field.TypeString, value)
+		_spec.SetField(friendrelationship.FieldUserId, field.TypeInt, value)
+	}
+	if value, ok := fru.mutation.AddedUserId(); ok {
+		_spec.AddField(friendrelationship.FieldUserId, field.TypeInt, value)
 	}
 	if value, ok := fru.mutation.FriendId(); ok {
-		_spec.SetField(friendrelationship.FieldFriendId, field.TypeString, value)
+		_spec.SetField(friendrelationship.FieldFriendId, field.TypeInt, value)
+	}
+	if value, ok := fru.mutation.AddedFriendId(); ok {
+		_spec.AddField(friendrelationship.FieldFriendId, field.TypeInt, value)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, fru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -141,30 +143,44 @@ type FriendRelationshipUpdateOne struct {
 }
 
 // SetUserId sets the "userId" field.
-func (fruo *FriendRelationshipUpdateOne) SetUserId(s string) *FriendRelationshipUpdateOne {
-	fruo.mutation.SetUserId(s)
+func (fruo *FriendRelationshipUpdateOne) SetUserId(i int) *FriendRelationshipUpdateOne {
+	fruo.mutation.ResetUserId()
+	fruo.mutation.SetUserId(i)
 	return fruo
 }
 
 // SetNillableUserId sets the "userId" field if the given value is not nil.
-func (fruo *FriendRelationshipUpdateOne) SetNillableUserId(s *string) *FriendRelationshipUpdateOne {
-	if s != nil {
-		fruo.SetUserId(*s)
+func (fruo *FriendRelationshipUpdateOne) SetNillableUserId(i *int) *FriendRelationshipUpdateOne {
+	if i != nil {
+		fruo.SetUserId(*i)
 	}
+	return fruo
+}
+
+// AddUserId adds i to the "userId" field.
+func (fruo *FriendRelationshipUpdateOne) AddUserId(i int) *FriendRelationshipUpdateOne {
+	fruo.mutation.AddUserId(i)
 	return fruo
 }
 
 // SetFriendId sets the "friendId" field.
-func (fruo *FriendRelationshipUpdateOne) SetFriendId(s string) *FriendRelationshipUpdateOne {
-	fruo.mutation.SetFriendId(s)
+func (fruo *FriendRelationshipUpdateOne) SetFriendId(i int) *FriendRelationshipUpdateOne {
+	fruo.mutation.ResetFriendId()
+	fruo.mutation.SetFriendId(i)
 	return fruo
 }
 
 // SetNillableFriendId sets the "friendId" field if the given value is not nil.
-func (fruo *FriendRelationshipUpdateOne) SetNillableFriendId(s *string) *FriendRelationshipUpdateOne {
-	if s != nil {
-		fruo.SetFriendId(*s)
+func (fruo *FriendRelationshipUpdateOne) SetNillableFriendId(i *int) *FriendRelationshipUpdateOne {
+	if i != nil {
+		fruo.SetFriendId(*i)
 	}
+	return fruo
+}
+
+// AddFriendId adds i to the "friendId" field.
+func (fruo *FriendRelationshipUpdateOne) AddFriendId(i int) *FriendRelationshipUpdateOne {
+	fruo.mutation.AddFriendId(i)
 	return fruo
 }
 
@@ -213,25 +229,7 @@ func (fruo *FriendRelationshipUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (fruo *FriendRelationshipUpdateOne) check() error {
-	if v, ok := fruo.mutation.UserId(); ok {
-		if err := friendrelationship.UserIdValidator(v); err != nil {
-			return &ValidationError{Name: "userId", err: fmt.Errorf(`ent: validator failed for field "FriendRelationship.userId": %w`, err)}
-		}
-	}
-	if v, ok := fruo.mutation.FriendId(); ok {
-		if err := friendrelationship.FriendIdValidator(v); err != nil {
-			return &ValidationError{Name: "friendId", err: fmt.Errorf(`ent: validator failed for field "FriendRelationship.friendId": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (fruo *FriendRelationshipUpdateOne) sqlSave(ctx context.Context) (_node *FriendRelationship, err error) {
-	if err := fruo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(friendrelationship.Table, friendrelationship.Columns, sqlgraph.NewFieldSpec(friendrelationship.FieldID, field.TypeInt))
 	id, ok := fruo.mutation.ID()
 	if !ok {
@@ -258,10 +256,16 @@ func (fruo *FriendRelationshipUpdateOne) sqlSave(ctx context.Context) (_node *Fr
 		}
 	}
 	if value, ok := fruo.mutation.UserId(); ok {
-		_spec.SetField(friendrelationship.FieldUserId, field.TypeString, value)
+		_spec.SetField(friendrelationship.FieldUserId, field.TypeInt, value)
+	}
+	if value, ok := fruo.mutation.AddedUserId(); ok {
+		_spec.AddField(friendrelationship.FieldUserId, field.TypeInt, value)
 	}
 	if value, ok := fruo.mutation.FriendId(); ok {
-		_spec.SetField(friendrelationship.FieldFriendId, field.TypeString, value)
+		_spec.SetField(friendrelationship.FieldFriendId, field.TypeInt, value)
+	}
+	if value, ok := fruo.mutation.AddedFriendId(); ok {
+		_spec.AddField(friendrelationship.FieldFriendId, field.TypeInt, value)
 	}
 	_node = &FriendRelationship{config: fruo.config}
 	_spec.Assign = _node.assignValues

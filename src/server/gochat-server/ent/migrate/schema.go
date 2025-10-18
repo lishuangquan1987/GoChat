@@ -12,9 +12,11 @@ var (
 	ChatRecordsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "msg_id", Type: field.TypeString},
-		{Name: "from_user_id", Type: field.TypeString},
-		{Name: "to_user_id", Type: field.TypeString},
-		{Name: "msg_type", Type: field.TypeString},
+		{Name: "from_user_id", Type: field.TypeInt},
+		{Name: "to_user_id", Type: field.TypeInt},
+		{Name: "msg_type", Type: field.TypeInt},
+		{Name: "is_group", Type: field.TypeBool, Default: false},
+		{Name: "group_id", Type: field.TypeInt, Nullable: true},
 		{Name: "create_time", Type: field.TypeTime},
 	}
 	// ChatRecordsTable holds the schema information for the "chat_records" table.
@@ -26,8 +28,8 @@ var (
 	// FriendRelationshipsColumns holds the columns for the "friend_relationships" table.
 	FriendRelationshipsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "user_id", Type: field.TypeString},
-		{Name: "friend_id", Type: field.TypeString},
+		{Name: "user_id", Type: field.TypeInt},
+		{Name: "friend_id", Type: field.TypeInt},
 	}
 	// FriendRelationshipsTable holds the schema information for the "friend_relationships" table.
 	FriendRelationshipsTable = &schema.Table{
@@ -35,14 +37,29 @@ var (
 		Columns:    FriendRelationshipsColumns,
 		PrimaryKey: []*schema.Column{FriendRelationshipsColumns[0]},
 	}
+	// FriendRequestsColumns holds the columns for the "friend_requests" table.
+	FriendRequestsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "from_user_id", Type: field.TypeInt},
+		{Name: "to_user_id", Type: field.TypeInt},
+		{Name: "remark", Type: field.TypeString, Nullable: true},
+		{Name: "status", Type: field.TypeInt, Default: 0},
+		{Name: "create_time", Type: field.TypeTime},
+	}
+	// FriendRequestsTable holds the schema information for the "friend_requests" table.
+	FriendRequestsTable = &schema.Table{
+		Name:       "friend_requests",
+		Columns:    FriendRequestsColumns,
+		PrimaryKey: []*schema.Column{FriendRequestsColumns[0]},
+	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "group_id", Type: field.TypeString},
+		{Name: "group_id", Type: field.TypeString, Unique: true},
 		{Name: "group_name", Type: field.TypeString},
-		{Name: "owner_id", Type: field.TypeString},
-		{Name: "create_user_id", Type: field.TypeString},
-		{Name: "create_time", Type: field.TypeString},
+		{Name: "owner_id", Type: field.TypeInt},
+		{Name: "create_user_id", Type: field.TypeInt},
+		{Name: "create_time", Type: field.TypeTime},
 		{Name: "members", Type: field.TypeJSON},
 	}
 	// GroupsTable holds the schema information for the "groups" table.
@@ -77,6 +94,34 @@ var (
 		Name:       "image_messages",
 		Columns:    ImageMessagesColumns,
 		PrimaryKey: []*schema.Column{ImageMessagesColumns[0]},
+	}
+	// MessagesColumns holds the columns for the "messages" table.
+	MessagesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "msg_id", Type: field.TypeString, Unique: true},
+		{Name: "msg_type", Type: field.TypeString},
+		{Name: "content", Type: field.TypeString},
+		{Name: "create_time", Type: field.TypeTime},
+	}
+	// MessagesTable holds the schema information for the "messages" table.
+	MessagesTable = &schema.Table{
+		Name:       "messages",
+		Columns:    MessagesColumns,
+		PrimaryKey: []*schema.Column{MessagesColumns[0]},
+	}
+	// MessageStatusColumns holds the columns for the "message_status" table.
+	MessageStatusColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "chat_record_id", Type: field.TypeInt},
+		{Name: "status", Type: field.TypeString},
+		{Name: "fail_reason", Type: field.TypeString, Nullable: true},
+		{Name: "update_time", Type: field.TypeTime},
+	}
+	// MessageStatusTable holds the schema information for the "message_status" table.
+	MessageStatusTable = &schema.Table{
+		Name:       "message_status",
+		Columns:    MessageStatusColumns,
+		PrimaryKey: []*schema.Column{MessageStatusColumns[0]},
 	}
 	// TextMessagesColumns holds the columns for the "text_messages" table.
 	TextMessagesColumns = []*schema.Column{
@@ -120,9 +165,12 @@ var (
 	Tables = []*schema.Table{
 		ChatRecordsTable,
 		FriendRelationshipsTable,
+		FriendRequestsTable,
 		GroupsTable,
 		GroupChatRecordsTable,
 		ImageMessagesTable,
+		MessagesTable,
+		MessageStatusTable,
 		TextMessagesTable,
 		UsersTable,
 		VideoMessagesTable,

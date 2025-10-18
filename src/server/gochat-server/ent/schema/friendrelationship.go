@@ -13,8 +13,8 @@ type FriendRelationship struct {
 // Fields of the FriendRelationship.
 func (FriendRelationship) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("userId").NotEmpty().Comment("用户ID"),
-		field.String("friendId").NotEmpty().Comment("好友ID"),
+		field.Int("userId").Comment("用户ID"),
+		field.Int("friendId").Comment("好友ID"),
 	}
 }
 

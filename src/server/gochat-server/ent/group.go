@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"gochat_server/ent/group"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -22,13 +23,13 @@ type Group struct {
 	// 群组名称
 	GroupName string `json:"groupName,omitempty"`
 	// 群主ID
-	OwnerId string `json:"ownerId,omitempty"`
+	OwnerId int `json:"ownerId,omitempty"`
 	// 创建者ID
-	CreateUserId string `json:"createUserId,omitempty"`
+	CreateUserId int `json:"createUserId,omitempty"`
 	// 群组创建时间
-	CreateTime string `json:"createTime,omitempty"`
-	// 群组成员ID
-	Members      []string `json:"members,omitempty"`
+	CreateTime time.Time `json:"createTime,omitempty"`
+	// 群组成员ID列表
+	Members      []int `json:"members,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -39,10 +40,12 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case group.FieldMembers:
 			values[i] = new([]byte)
-		case group.FieldID:
+		case group.FieldID, group.FieldOwnerId, group.FieldCreateUserId:
 			values[i] = new(sql.NullInt64)
-		case group.FieldGroupId, group.FieldGroupName, group.FieldOwnerId, group.FieldCreateUserId, group.FieldCreateTime:
+		case group.FieldGroupId, group.FieldGroupName:
 			values[i] = new(sql.NullString)
+		case group.FieldCreateTime:
+			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -77,22 +80,22 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 				gr.GroupName = value.String
 			}
 		case group.FieldOwnerId:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field ownerId", values[i])
 			} else if value.Valid {
-				gr.OwnerId = value.String
+				gr.OwnerId = int(value.Int64)
 			}
 		case group.FieldCreateUserId:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field createUserId", values[i])
 			} else if value.Valid {
-				gr.CreateUserId = value.String
+				gr.CreateUserId = int(value.Int64)
 			}
 		case group.FieldCreateTime:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field createTime", values[i])
 			} else if value.Valid {
-				gr.CreateTime = value.String
+				gr.CreateTime = value.Time
 			}
 		case group.FieldMembers:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -145,13 +148,13 @@ func (gr *Group) String() string {
 	builder.WriteString(gr.GroupName)
 	builder.WriteString(", ")
 	builder.WriteString("ownerId=")
-	builder.WriteString(gr.OwnerId)
+	builder.WriteString(fmt.Sprintf("%v", gr.OwnerId))
 	builder.WriteString(", ")
 	builder.WriteString("createUserId=")
-	builder.WriteString(gr.CreateUserId)
+	builder.WriteString(fmt.Sprintf("%v", gr.CreateUserId))
 	builder.WriteString(", ")
 	builder.WriteString("createTime=")
-	builder.WriteString(gr.CreateTime)
+	builder.WriteString(gr.CreateTime.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("members=")
 	builder.WriteString(fmt.Sprintf("%v", gr.Members))

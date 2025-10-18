@@ -17,9 +17,9 @@ type FriendRelationship struct {
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
 	// 用户ID
-	UserId string `json:"userId,omitempty"`
+	UserId int `json:"userId,omitempty"`
 	// 好友ID
-	FriendId     string `json:"friendId,omitempty"`
+	FriendId     int `json:"friendId,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -28,10 +28,8 @@ func (*FriendRelationship) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case friendrelationship.FieldID:
+		case friendrelationship.FieldID, friendrelationship.FieldUserId, friendrelationship.FieldFriendId:
 			values[i] = new(sql.NullInt64)
-		case friendrelationship.FieldUserId, friendrelationship.FieldFriendId:
-			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -54,16 +52,16 @@ func (fr *FriendRelationship) assignValues(columns []string, values []any) error
 			}
 			fr.ID = int(value.Int64)
 		case friendrelationship.FieldUserId:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field userId", values[i])
 			} else if value.Valid {
-				fr.UserId = value.String
+				fr.UserId = int(value.Int64)
 			}
 		case friendrelationship.FieldFriendId:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field friendId", values[i])
 			} else if value.Valid {
-				fr.FriendId = value.String
+				fr.FriendId = int(value.Int64)
 			}
 		default:
 			fr.selectValues.Set(columns[i], values[i])
@@ -102,10 +100,10 @@ func (fr *FriendRelationship) String() string {
 	builder.WriteString("FriendRelationship(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", fr.ID))
 	builder.WriteString("userId=")
-	builder.WriteString(fr.UserId)
+	builder.WriteString(fmt.Sprintf("%v", fr.UserId))
 	builder.WriteString(", ")
 	builder.WriteString("friendId=")
-	builder.WriteString(fr.FriendId)
+	builder.WriteString(fmt.Sprintf("%v", fr.FriendId))
 	builder.WriteByte(')')
 	return builder.String()
 }

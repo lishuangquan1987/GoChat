@@ -20,14 +20,14 @@ type FriendRelationshipCreate struct {
 }
 
 // SetUserId sets the "userId" field.
-func (frc *FriendRelationshipCreate) SetUserId(s string) *FriendRelationshipCreate {
-	frc.mutation.SetUserId(s)
+func (frc *FriendRelationshipCreate) SetUserId(i int) *FriendRelationshipCreate {
+	frc.mutation.SetUserId(i)
 	return frc
 }
 
 // SetFriendId sets the "friendId" field.
-func (frc *FriendRelationshipCreate) SetFriendId(s string) *FriendRelationshipCreate {
-	frc.mutation.SetFriendId(s)
+func (frc *FriendRelationshipCreate) SetFriendId(i int) *FriendRelationshipCreate {
+	frc.mutation.SetFriendId(i)
 	return frc
 }
 
@@ -68,18 +68,8 @@ func (frc *FriendRelationshipCreate) check() error {
 	if _, ok := frc.mutation.UserId(); !ok {
 		return &ValidationError{Name: "userId", err: errors.New(`ent: missing required field "FriendRelationship.userId"`)}
 	}
-	if v, ok := frc.mutation.UserId(); ok {
-		if err := friendrelationship.UserIdValidator(v); err != nil {
-			return &ValidationError{Name: "userId", err: fmt.Errorf(`ent: validator failed for field "FriendRelationship.userId": %w`, err)}
-		}
-	}
 	if _, ok := frc.mutation.FriendId(); !ok {
 		return &ValidationError{Name: "friendId", err: errors.New(`ent: missing required field "FriendRelationship.friendId"`)}
-	}
-	if v, ok := frc.mutation.FriendId(); ok {
-		if err := friendrelationship.FriendIdValidator(v); err != nil {
-			return &ValidationError{Name: "friendId", err: fmt.Errorf(`ent: validator failed for field "FriendRelationship.friendId": %w`, err)}
-		}
 	}
 	return nil
 }
@@ -108,11 +98,11 @@ func (frc *FriendRelationshipCreate) createSpec() (*FriendRelationship, *sqlgrap
 		_spec = sqlgraph.NewCreateSpec(friendrelationship.Table, sqlgraph.NewFieldSpec(friendrelationship.FieldID, field.TypeInt))
 	)
 	if value, ok := frc.mutation.UserId(); ok {
-		_spec.SetField(friendrelationship.FieldUserId, field.TypeString, value)
+		_spec.SetField(friendrelationship.FieldUserId, field.TypeInt, value)
 		_node.UserId = value
 	}
 	if value, ok := frc.mutation.FriendId(); ok {
-		_spec.SetField(friendrelationship.FieldFriendId, field.TypeString, value)
+		_spec.SetField(friendrelationship.FieldFriendId, field.TypeInt, value)
 		_node.FriendId = value
 	}
 	return _node, _spec

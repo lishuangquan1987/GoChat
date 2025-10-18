@@ -21,6 +21,10 @@ const (
 	FieldToUserId = "to_user_id"
 	// FieldMsgType holds the string denoting the msgtype field in the database.
 	FieldMsgType = "msg_type"
+	// FieldIsGroup holds the string denoting the isgroup field in the database.
+	FieldIsGroup = "is_group"
+	// FieldGroupId holds the string denoting the groupid field in the database.
+	FieldGroupId = "group_id"
 	// FieldCreateTime holds the string denoting the createtime field in the database.
 	FieldCreateTime = "create_time"
 	// Table holds the table name of the chatrecord in the database.
@@ -34,6 +38,8 @@ var Columns = []string{
 	FieldFromUserId,
 	FieldToUserId,
 	FieldMsgType,
+	FieldIsGroup,
+	FieldGroupId,
 	FieldCreateTime,
 }
 
@@ -50,12 +56,8 @@ func ValidColumn(column string) bool {
 var (
 	// MsgIdValidator is a validator for the "msgId" field. It is called by the builders before save.
 	MsgIdValidator func(string) error
-	// FromUserIdValidator is a validator for the "fromUserId" field. It is called by the builders before save.
-	FromUserIdValidator func(string) error
-	// ToUserIdValidator is a validator for the "toUserId" field. It is called by the builders before save.
-	ToUserIdValidator func(string) error
-	// MsgTypeValidator is a validator for the "msgType" field. It is called by the builders before save.
-	MsgTypeValidator func(string) error
+	// DefaultIsGroup holds the default value on creation for the "isGroup" field.
+	DefaultIsGroup bool
 	// DefaultCreateTime holds the default value on creation for the "createTime" field.
 	DefaultCreateTime func() time.Time
 )
@@ -86,6 +88,16 @@ func ByToUserId(opts ...sql.OrderTermOption) OrderOption {
 // ByMsgType orders the results by the msgType field.
 func ByMsgType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMsgType, opts...).ToFunc()
+}
+
+// ByIsGroup orders the results by the isGroup field.
+func ByIsGroup(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsGroup, opts...).ToFunc()
+}
+
+// ByGroupId orders the results by the groupId field.
+func ByGroupId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldGroupId, opts...).ToFunc()
 }
 
 // ByCreateTime orders the results by the createTime field.

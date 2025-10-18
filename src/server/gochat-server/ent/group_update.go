@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"gochat_server/ent/group"
 	"gochat_server/ent/predicate"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -57,56 +58,70 @@ func (gu *GroupUpdate) SetNillableGroupName(s *string) *GroupUpdate {
 }
 
 // SetOwnerId sets the "ownerId" field.
-func (gu *GroupUpdate) SetOwnerId(s string) *GroupUpdate {
-	gu.mutation.SetOwnerId(s)
+func (gu *GroupUpdate) SetOwnerId(i int) *GroupUpdate {
+	gu.mutation.ResetOwnerId()
+	gu.mutation.SetOwnerId(i)
 	return gu
 }
 
 // SetNillableOwnerId sets the "ownerId" field if the given value is not nil.
-func (gu *GroupUpdate) SetNillableOwnerId(s *string) *GroupUpdate {
-	if s != nil {
-		gu.SetOwnerId(*s)
+func (gu *GroupUpdate) SetNillableOwnerId(i *int) *GroupUpdate {
+	if i != nil {
+		gu.SetOwnerId(*i)
 	}
+	return gu
+}
+
+// AddOwnerId adds i to the "ownerId" field.
+func (gu *GroupUpdate) AddOwnerId(i int) *GroupUpdate {
+	gu.mutation.AddOwnerId(i)
 	return gu
 }
 
 // SetCreateUserId sets the "createUserId" field.
-func (gu *GroupUpdate) SetCreateUserId(s string) *GroupUpdate {
-	gu.mutation.SetCreateUserId(s)
+func (gu *GroupUpdate) SetCreateUserId(i int) *GroupUpdate {
+	gu.mutation.ResetCreateUserId()
+	gu.mutation.SetCreateUserId(i)
 	return gu
 }
 
 // SetNillableCreateUserId sets the "createUserId" field if the given value is not nil.
-func (gu *GroupUpdate) SetNillableCreateUserId(s *string) *GroupUpdate {
-	if s != nil {
-		gu.SetCreateUserId(*s)
+func (gu *GroupUpdate) SetNillableCreateUserId(i *int) *GroupUpdate {
+	if i != nil {
+		gu.SetCreateUserId(*i)
 	}
 	return gu
 }
 
+// AddCreateUserId adds i to the "createUserId" field.
+func (gu *GroupUpdate) AddCreateUserId(i int) *GroupUpdate {
+	gu.mutation.AddCreateUserId(i)
+	return gu
+}
+
 // SetCreateTime sets the "createTime" field.
-func (gu *GroupUpdate) SetCreateTime(s string) *GroupUpdate {
-	gu.mutation.SetCreateTime(s)
+func (gu *GroupUpdate) SetCreateTime(t time.Time) *GroupUpdate {
+	gu.mutation.SetCreateTime(t)
 	return gu
 }
 
 // SetNillableCreateTime sets the "createTime" field if the given value is not nil.
-func (gu *GroupUpdate) SetNillableCreateTime(s *string) *GroupUpdate {
-	if s != nil {
-		gu.SetCreateTime(*s)
+func (gu *GroupUpdate) SetNillableCreateTime(t *time.Time) *GroupUpdate {
+	if t != nil {
+		gu.SetCreateTime(*t)
 	}
 	return gu
 }
 
 // SetMembers sets the "members" field.
-func (gu *GroupUpdate) SetMembers(s []string) *GroupUpdate {
-	gu.mutation.SetMembers(s)
+func (gu *GroupUpdate) SetMembers(i []int) *GroupUpdate {
+	gu.mutation.SetMembers(i)
 	return gu
 }
 
-// AppendMembers appends s to the "members" field.
-func (gu *GroupUpdate) AppendMembers(s []string) *GroupUpdate {
-	gu.mutation.AppendMembers(s)
+// AppendMembers appends i to the "members" field.
+func (gu *GroupUpdate) AppendMembers(i []int) *GroupUpdate {
+	gu.mutation.AppendMembers(i)
 	return gu
 }
 
@@ -154,21 +169,6 @@ func (gu *GroupUpdate) check() error {
 			return &ValidationError{Name: "groupName", err: fmt.Errorf(`ent: validator failed for field "Group.groupName": %w`, err)}
 		}
 	}
-	if v, ok := gu.mutation.OwnerId(); ok {
-		if err := group.OwnerIdValidator(v); err != nil {
-			return &ValidationError{Name: "ownerId", err: fmt.Errorf(`ent: validator failed for field "Group.ownerId": %w`, err)}
-		}
-	}
-	if v, ok := gu.mutation.CreateUserId(); ok {
-		if err := group.CreateUserIdValidator(v); err != nil {
-			return &ValidationError{Name: "createUserId", err: fmt.Errorf(`ent: validator failed for field "Group.createUserId": %w`, err)}
-		}
-	}
-	if v, ok := gu.mutation.CreateTime(); ok {
-		if err := group.CreateTimeValidator(v); err != nil {
-			return &ValidationError{Name: "createTime", err: fmt.Errorf(`ent: validator failed for field "Group.createTime": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -191,13 +191,19 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(group.FieldGroupName, field.TypeString, value)
 	}
 	if value, ok := gu.mutation.OwnerId(); ok {
-		_spec.SetField(group.FieldOwnerId, field.TypeString, value)
+		_spec.SetField(group.FieldOwnerId, field.TypeInt, value)
+	}
+	if value, ok := gu.mutation.AddedOwnerId(); ok {
+		_spec.AddField(group.FieldOwnerId, field.TypeInt, value)
 	}
 	if value, ok := gu.mutation.CreateUserId(); ok {
-		_spec.SetField(group.FieldCreateUserId, field.TypeString, value)
+		_spec.SetField(group.FieldCreateUserId, field.TypeInt, value)
+	}
+	if value, ok := gu.mutation.AddedCreateUserId(); ok {
+		_spec.AddField(group.FieldCreateUserId, field.TypeInt, value)
 	}
 	if value, ok := gu.mutation.CreateTime(); ok {
-		_spec.SetField(group.FieldCreateTime, field.TypeString, value)
+		_spec.SetField(group.FieldCreateTime, field.TypeTime, value)
 	}
 	if value, ok := gu.mutation.Members(); ok {
 		_spec.SetField(group.FieldMembers, field.TypeJSON, value)
@@ -256,56 +262,70 @@ func (guo *GroupUpdateOne) SetNillableGroupName(s *string) *GroupUpdateOne {
 }
 
 // SetOwnerId sets the "ownerId" field.
-func (guo *GroupUpdateOne) SetOwnerId(s string) *GroupUpdateOne {
-	guo.mutation.SetOwnerId(s)
+func (guo *GroupUpdateOne) SetOwnerId(i int) *GroupUpdateOne {
+	guo.mutation.ResetOwnerId()
+	guo.mutation.SetOwnerId(i)
 	return guo
 }
 
 // SetNillableOwnerId sets the "ownerId" field if the given value is not nil.
-func (guo *GroupUpdateOne) SetNillableOwnerId(s *string) *GroupUpdateOne {
-	if s != nil {
-		guo.SetOwnerId(*s)
+func (guo *GroupUpdateOne) SetNillableOwnerId(i *int) *GroupUpdateOne {
+	if i != nil {
+		guo.SetOwnerId(*i)
 	}
+	return guo
+}
+
+// AddOwnerId adds i to the "ownerId" field.
+func (guo *GroupUpdateOne) AddOwnerId(i int) *GroupUpdateOne {
+	guo.mutation.AddOwnerId(i)
 	return guo
 }
 
 // SetCreateUserId sets the "createUserId" field.
-func (guo *GroupUpdateOne) SetCreateUserId(s string) *GroupUpdateOne {
-	guo.mutation.SetCreateUserId(s)
+func (guo *GroupUpdateOne) SetCreateUserId(i int) *GroupUpdateOne {
+	guo.mutation.ResetCreateUserId()
+	guo.mutation.SetCreateUserId(i)
 	return guo
 }
 
 // SetNillableCreateUserId sets the "createUserId" field if the given value is not nil.
-func (guo *GroupUpdateOne) SetNillableCreateUserId(s *string) *GroupUpdateOne {
-	if s != nil {
-		guo.SetCreateUserId(*s)
+func (guo *GroupUpdateOne) SetNillableCreateUserId(i *int) *GroupUpdateOne {
+	if i != nil {
+		guo.SetCreateUserId(*i)
 	}
 	return guo
 }
 
+// AddCreateUserId adds i to the "createUserId" field.
+func (guo *GroupUpdateOne) AddCreateUserId(i int) *GroupUpdateOne {
+	guo.mutation.AddCreateUserId(i)
+	return guo
+}
+
 // SetCreateTime sets the "createTime" field.
-func (guo *GroupUpdateOne) SetCreateTime(s string) *GroupUpdateOne {
-	guo.mutation.SetCreateTime(s)
+func (guo *GroupUpdateOne) SetCreateTime(t time.Time) *GroupUpdateOne {
+	guo.mutation.SetCreateTime(t)
 	return guo
 }
 
 // SetNillableCreateTime sets the "createTime" field if the given value is not nil.
-func (guo *GroupUpdateOne) SetNillableCreateTime(s *string) *GroupUpdateOne {
-	if s != nil {
-		guo.SetCreateTime(*s)
+func (guo *GroupUpdateOne) SetNillableCreateTime(t *time.Time) *GroupUpdateOne {
+	if t != nil {
+		guo.SetCreateTime(*t)
 	}
 	return guo
 }
 
 // SetMembers sets the "members" field.
-func (guo *GroupUpdateOne) SetMembers(s []string) *GroupUpdateOne {
-	guo.mutation.SetMembers(s)
+func (guo *GroupUpdateOne) SetMembers(i []int) *GroupUpdateOne {
+	guo.mutation.SetMembers(i)
 	return guo
 }
 
-// AppendMembers appends s to the "members" field.
-func (guo *GroupUpdateOne) AppendMembers(s []string) *GroupUpdateOne {
-	guo.mutation.AppendMembers(s)
+// AppendMembers appends i to the "members" field.
+func (guo *GroupUpdateOne) AppendMembers(i []int) *GroupUpdateOne {
+	guo.mutation.AppendMembers(i)
 	return guo
 }
 
@@ -366,21 +386,6 @@ func (guo *GroupUpdateOne) check() error {
 			return &ValidationError{Name: "groupName", err: fmt.Errorf(`ent: validator failed for field "Group.groupName": %w`, err)}
 		}
 	}
-	if v, ok := guo.mutation.OwnerId(); ok {
-		if err := group.OwnerIdValidator(v); err != nil {
-			return &ValidationError{Name: "ownerId", err: fmt.Errorf(`ent: validator failed for field "Group.ownerId": %w`, err)}
-		}
-	}
-	if v, ok := guo.mutation.CreateUserId(); ok {
-		if err := group.CreateUserIdValidator(v); err != nil {
-			return &ValidationError{Name: "createUserId", err: fmt.Errorf(`ent: validator failed for field "Group.createUserId": %w`, err)}
-		}
-	}
-	if v, ok := guo.mutation.CreateTime(); ok {
-		if err := group.CreateTimeValidator(v); err != nil {
-			return &ValidationError{Name: "createTime", err: fmt.Errorf(`ent: validator failed for field "Group.createTime": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -420,13 +425,19 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 		_spec.SetField(group.FieldGroupName, field.TypeString, value)
 	}
 	if value, ok := guo.mutation.OwnerId(); ok {
-		_spec.SetField(group.FieldOwnerId, field.TypeString, value)
+		_spec.SetField(group.FieldOwnerId, field.TypeInt, value)
+	}
+	if value, ok := guo.mutation.AddedOwnerId(); ok {
+		_spec.AddField(group.FieldOwnerId, field.TypeInt, value)
 	}
 	if value, ok := guo.mutation.CreateUserId(); ok {
-		_spec.SetField(group.FieldCreateUserId, field.TypeString, value)
+		_spec.SetField(group.FieldCreateUserId, field.TypeInt, value)
+	}
+	if value, ok := guo.mutation.AddedCreateUserId(); ok {
+		_spec.AddField(group.FieldCreateUserId, field.TypeInt, value)
 	}
 	if value, ok := guo.mutation.CreateTime(); ok {
-		_spec.SetField(group.FieldCreateTime, field.TypeString, value)
+		_spec.SetField(group.FieldCreateTime, field.TypeTime, value)
 	}
 	if value, ok := guo.mutation.Members(); ok {
 		_spec.SetField(group.FieldMembers, field.TypeJSON, value)

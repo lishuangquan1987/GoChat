@@ -36,13 +36,6 @@ func ValidColumn(column string) bool {
 	return false
 }
 
-var (
-	// UserIdValidator is a validator for the "userId" field. It is called by the builders before save.
-	UserIdValidator func(string) error
-	// FriendIdValidator is a validator for the "friendId" field. It is called by the builders before save.
-	FriendIdValidator func(string) error
-)
-
 // OrderOption defines the ordering options for the FriendRelationship queries.
 type OrderOption func(*sql.Selector)
 

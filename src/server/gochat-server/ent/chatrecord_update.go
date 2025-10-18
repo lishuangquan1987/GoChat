@@ -43,44 +43,106 @@ func (cru *ChatRecordUpdate) SetNillableMsgId(s *string) *ChatRecordUpdate {
 }
 
 // SetFromUserId sets the "fromUserId" field.
-func (cru *ChatRecordUpdate) SetFromUserId(s string) *ChatRecordUpdate {
-	cru.mutation.SetFromUserId(s)
+func (cru *ChatRecordUpdate) SetFromUserId(i int) *ChatRecordUpdate {
+	cru.mutation.ResetFromUserId()
+	cru.mutation.SetFromUserId(i)
 	return cru
 }
 
 // SetNillableFromUserId sets the "fromUserId" field if the given value is not nil.
-func (cru *ChatRecordUpdate) SetNillableFromUserId(s *string) *ChatRecordUpdate {
-	if s != nil {
-		cru.SetFromUserId(*s)
+func (cru *ChatRecordUpdate) SetNillableFromUserId(i *int) *ChatRecordUpdate {
+	if i != nil {
+		cru.SetFromUserId(*i)
 	}
+	return cru
+}
+
+// AddFromUserId adds i to the "fromUserId" field.
+func (cru *ChatRecordUpdate) AddFromUserId(i int) *ChatRecordUpdate {
+	cru.mutation.AddFromUserId(i)
 	return cru
 }
 
 // SetToUserId sets the "toUserId" field.
-func (cru *ChatRecordUpdate) SetToUserId(s string) *ChatRecordUpdate {
-	cru.mutation.SetToUserId(s)
+func (cru *ChatRecordUpdate) SetToUserId(i int) *ChatRecordUpdate {
+	cru.mutation.ResetToUserId()
+	cru.mutation.SetToUserId(i)
 	return cru
 }
 
 // SetNillableToUserId sets the "toUserId" field if the given value is not nil.
-func (cru *ChatRecordUpdate) SetNillableToUserId(s *string) *ChatRecordUpdate {
-	if s != nil {
-		cru.SetToUserId(*s)
+func (cru *ChatRecordUpdate) SetNillableToUserId(i *int) *ChatRecordUpdate {
+	if i != nil {
+		cru.SetToUserId(*i)
 	}
+	return cru
+}
+
+// AddToUserId adds i to the "toUserId" field.
+func (cru *ChatRecordUpdate) AddToUserId(i int) *ChatRecordUpdate {
+	cru.mutation.AddToUserId(i)
 	return cru
 }
 
 // SetMsgType sets the "msgType" field.
-func (cru *ChatRecordUpdate) SetMsgType(s string) *ChatRecordUpdate {
-	cru.mutation.SetMsgType(s)
+func (cru *ChatRecordUpdate) SetMsgType(i int) *ChatRecordUpdate {
+	cru.mutation.ResetMsgType()
+	cru.mutation.SetMsgType(i)
 	return cru
 }
 
 // SetNillableMsgType sets the "msgType" field if the given value is not nil.
-func (cru *ChatRecordUpdate) SetNillableMsgType(s *string) *ChatRecordUpdate {
-	if s != nil {
-		cru.SetMsgType(*s)
+func (cru *ChatRecordUpdate) SetNillableMsgType(i *int) *ChatRecordUpdate {
+	if i != nil {
+		cru.SetMsgType(*i)
 	}
+	return cru
+}
+
+// AddMsgType adds i to the "msgType" field.
+func (cru *ChatRecordUpdate) AddMsgType(i int) *ChatRecordUpdate {
+	cru.mutation.AddMsgType(i)
+	return cru
+}
+
+// SetIsGroup sets the "isGroup" field.
+func (cru *ChatRecordUpdate) SetIsGroup(b bool) *ChatRecordUpdate {
+	cru.mutation.SetIsGroup(b)
+	return cru
+}
+
+// SetNillableIsGroup sets the "isGroup" field if the given value is not nil.
+func (cru *ChatRecordUpdate) SetNillableIsGroup(b *bool) *ChatRecordUpdate {
+	if b != nil {
+		cru.SetIsGroup(*b)
+	}
+	return cru
+}
+
+// SetGroupId sets the "groupId" field.
+func (cru *ChatRecordUpdate) SetGroupId(i int) *ChatRecordUpdate {
+	cru.mutation.ResetGroupId()
+	cru.mutation.SetGroupId(i)
+	return cru
+}
+
+// SetNillableGroupId sets the "groupId" field if the given value is not nil.
+func (cru *ChatRecordUpdate) SetNillableGroupId(i *int) *ChatRecordUpdate {
+	if i != nil {
+		cru.SetGroupId(*i)
+	}
+	return cru
+}
+
+// AddGroupId adds i to the "groupId" field.
+func (cru *ChatRecordUpdate) AddGroupId(i int) *ChatRecordUpdate {
+	cru.mutation.AddGroupId(i)
+	return cru
+}
+
+// ClearGroupId clears the value of the "groupId" field.
+func (cru *ChatRecordUpdate) ClearGroupId() *ChatRecordUpdate {
+	cru.mutation.ClearGroupId()
 	return cru
 }
 
@@ -137,21 +199,6 @@ func (cru *ChatRecordUpdate) check() error {
 			return &ValidationError{Name: "msgId", err: fmt.Errorf(`ent: validator failed for field "ChatRecord.msgId": %w`, err)}
 		}
 	}
-	if v, ok := cru.mutation.FromUserId(); ok {
-		if err := chatrecord.FromUserIdValidator(v); err != nil {
-			return &ValidationError{Name: "fromUserId", err: fmt.Errorf(`ent: validator failed for field "ChatRecord.fromUserId": %w`, err)}
-		}
-	}
-	if v, ok := cru.mutation.ToUserId(); ok {
-		if err := chatrecord.ToUserIdValidator(v); err != nil {
-			return &ValidationError{Name: "toUserId", err: fmt.Errorf(`ent: validator failed for field "ChatRecord.toUserId": %w`, err)}
-		}
-	}
-	if v, ok := cru.mutation.MsgType(); ok {
-		if err := chatrecord.MsgTypeValidator(v); err != nil {
-			return &ValidationError{Name: "msgType", err: fmt.Errorf(`ent: validator failed for field "ChatRecord.msgType": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -171,13 +218,34 @@ func (cru *ChatRecordUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(chatrecord.FieldMsgId, field.TypeString, value)
 	}
 	if value, ok := cru.mutation.FromUserId(); ok {
-		_spec.SetField(chatrecord.FieldFromUserId, field.TypeString, value)
+		_spec.SetField(chatrecord.FieldFromUserId, field.TypeInt, value)
+	}
+	if value, ok := cru.mutation.AddedFromUserId(); ok {
+		_spec.AddField(chatrecord.FieldFromUserId, field.TypeInt, value)
 	}
 	if value, ok := cru.mutation.ToUserId(); ok {
-		_spec.SetField(chatrecord.FieldToUserId, field.TypeString, value)
+		_spec.SetField(chatrecord.FieldToUserId, field.TypeInt, value)
+	}
+	if value, ok := cru.mutation.AddedToUserId(); ok {
+		_spec.AddField(chatrecord.FieldToUserId, field.TypeInt, value)
 	}
 	if value, ok := cru.mutation.MsgType(); ok {
-		_spec.SetField(chatrecord.FieldMsgType, field.TypeString, value)
+		_spec.SetField(chatrecord.FieldMsgType, field.TypeInt, value)
+	}
+	if value, ok := cru.mutation.AddedMsgType(); ok {
+		_spec.AddField(chatrecord.FieldMsgType, field.TypeInt, value)
+	}
+	if value, ok := cru.mutation.IsGroup(); ok {
+		_spec.SetField(chatrecord.FieldIsGroup, field.TypeBool, value)
+	}
+	if value, ok := cru.mutation.GroupId(); ok {
+		_spec.SetField(chatrecord.FieldGroupId, field.TypeInt, value)
+	}
+	if value, ok := cru.mutation.AddedGroupId(); ok {
+		_spec.AddField(chatrecord.FieldGroupId, field.TypeInt, value)
+	}
+	if cru.mutation.GroupIdCleared() {
+		_spec.ClearField(chatrecord.FieldGroupId, field.TypeInt)
 	}
 	if value, ok := cru.mutation.CreateTime(); ok {
 		_spec.SetField(chatrecord.FieldCreateTime, field.TypeTime, value)
@@ -217,44 +285,106 @@ func (cruo *ChatRecordUpdateOne) SetNillableMsgId(s *string) *ChatRecordUpdateOn
 }
 
 // SetFromUserId sets the "fromUserId" field.
-func (cruo *ChatRecordUpdateOne) SetFromUserId(s string) *ChatRecordUpdateOne {
-	cruo.mutation.SetFromUserId(s)
+func (cruo *ChatRecordUpdateOne) SetFromUserId(i int) *ChatRecordUpdateOne {
+	cruo.mutation.ResetFromUserId()
+	cruo.mutation.SetFromUserId(i)
 	return cruo
 }
 
 // SetNillableFromUserId sets the "fromUserId" field if the given value is not nil.
-func (cruo *ChatRecordUpdateOne) SetNillableFromUserId(s *string) *ChatRecordUpdateOne {
-	if s != nil {
-		cruo.SetFromUserId(*s)
+func (cruo *ChatRecordUpdateOne) SetNillableFromUserId(i *int) *ChatRecordUpdateOne {
+	if i != nil {
+		cruo.SetFromUserId(*i)
 	}
+	return cruo
+}
+
+// AddFromUserId adds i to the "fromUserId" field.
+func (cruo *ChatRecordUpdateOne) AddFromUserId(i int) *ChatRecordUpdateOne {
+	cruo.mutation.AddFromUserId(i)
 	return cruo
 }
 
 // SetToUserId sets the "toUserId" field.
-func (cruo *ChatRecordUpdateOne) SetToUserId(s string) *ChatRecordUpdateOne {
-	cruo.mutation.SetToUserId(s)
+func (cruo *ChatRecordUpdateOne) SetToUserId(i int) *ChatRecordUpdateOne {
+	cruo.mutation.ResetToUserId()
+	cruo.mutation.SetToUserId(i)
 	return cruo
 }
 
 // SetNillableToUserId sets the "toUserId" field if the given value is not nil.
-func (cruo *ChatRecordUpdateOne) SetNillableToUserId(s *string) *ChatRecordUpdateOne {
-	if s != nil {
-		cruo.SetToUserId(*s)
+func (cruo *ChatRecordUpdateOne) SetNillableToUserId(i *int) *ChatRecordUpdateOne {
+	if i != nil {
+		cruo.SetToUserId(*i)
 	}
+	return cruo
+}
+
+// AddToUserId adds i to the "toUserId" field.
+func (cruo *ChatRecordUpdateOne) AddToUserId(i int) *ChatRecordUpdateOne {
+	cruo.mutation.AddToUserId(i)
 	return cruo
 }
 
 // SetMsgType sets the "msgType" field.
-func (cruo *ChatRecordUpdateOne) SetMsgType(s string) *ChatRecordUpdateOne {
-	cruo.mutation.SetMsgType(s)
+func (cruo *ChatRecordUpdateOne) SetMsgType(i int) *ChatRecordUpdateOne {
+	cruo.mutation.ResetMsgType()
+	cruo.mutation.SetMsgType(i)
 	return cruo
 }
 
 // SetNillableMsgType sets the "msgType" field if the given value is not nil.
-func (cruo *ChatRecordUpdateOne) SetNillableMsgType(s *string) *ChatRecordUpdateOne {
-	if s != nil {
-		cruo.SetMsgType(*s)
+func (cruo *ChatRecordUpdateOne) SetNillableMsgType(i *int) *ChatRecordUpdateOne {
+	if i != nil {
+		cruo.SetMsgType(*i)
 	}
+	return cruo
+}
+
+// AddMsgType adds i to the "msgType" field.
+func (cruo *ChatRecordUpdateOne) AddMsgType(i int) *ChatRecordUpdateOne {
+	cruo.mutation.AddMsgType(i)
+	return cruo
+}
+
+// SetIsGroup sets the "isGroup" field.
+func (cruo *ChatRecordUpdateOne) SetIsGroup(b bool) *ChatRecordUpdateOne {
+	cruo.mutation.SetIsGroup(b)
+	return cruo
+}
+
+// SetNillableIsGroup sets the "isGroup" field if the given value is not nil.
+func (cruo *ChatRecordUpdateOne) SetNillableIsGroup(b *bool) *ChatRecordUpdateOne {
+	if b != nil {
+		cruo.SetIsGroup(*b)
+	}
+	return cruo
+}
+
+// SetGroupId sets the "groupId" field.
+func (cruo *ChatRecordUpdateOne) SetGroupId(i int) *ChatRecordUpdateOne {
+	cruo.mutation.ResetGroupId()
+	cruo.mutation.SetGroupId(i)
+	return cruo
+}
+
+// SetNillableGroupId sets the "groupId" field if the given value is not nil.
+func (cruo *ChatRecordUpdateOne) SetNillableGroupId(i *int) *ChatRecordUpdateOne {
+	if i != nil {
+		cruo.SetGroupId(*i)
+	}
+	return cruo
+}
+
+// AddGroupId adds i to the "groupId" field.
+func (cruo *ChatRecordUpdateOne) AddGroupId(i int) *ChatRecordUpdateOne {
+	cruo.mutation.AddGroupId(i)
+	return cruo
+}
+
+// ClearGroupId clears the value of the "groupId" field.
+func (cruo *ChatRecordUpdateOne) ClearGroupId() *ChatRecordUpdateOne {
+	cruo.mutation.ClearGroupId()
 	return cruo
 }
 
@@ -324,21 +454,6 @@ func (cruo *ChatRecordUpdateOne) check() error {
 			return &ValidationError{Name: "msgId", err: fmt.Errorf(`ent: validator failed for field "ChatRecord.msgId": %w`, err)}
 		}
 	}
-	if v, ok := cruo.mutation.FromUserId(); ok {
-		if err := chatrecord.FromUserIdValidator(v); err != nil {
-			return &ValidationError{Name: "fromUserId", err: fmt.Errorf(`ent: validator failed for field "ChatRecord.fromUserId": %w`, err)}
-		}
-	}
-	if v, ok := cruo.mutation.ToUserId(); ok {
-		if err := chatrecord.ToUserIdValidator(v); err != nil {
-			return &ValidationError{Name: "toUserId", err: fmt.Errorf(`ent: validator failed for field "ChatRecord.toUserId": %w`, err)}
-		}
-	}
-	if v, ok := cruo.mutation.MsgType(); ok {
-		if err := chatrecord.MsgTypeValidator(v); err != nil {
-			return &ValidationError{Name: "msgType", err: fmt.Errorf(`ent: validator failed for field "ChatRecord.msgType": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -375,13 +490,34 @@ func (cruo *ChatRecordUpdateOne) sqlSave(ctx context.Context) (_node *ChatRecord
 		_spec.SetField(chatrecord.FieldMsgId, field.TypeString, value)
 	}
 	if value, ok := cruo.mutation.FromUserId(); ok {
-		_spec.SetField(chatrecord.FieldFromUserId, field.TypeString, value)
+		_spec.SetField(chatrecord.FieldFromUserId, field.TypeInt, value)
+	}
+	if value, ok := cruo.mutation.AddedFromUserId(); ok {
+		_spec.AddField(chatrecord.FieldFromUserId, field.TypeInt, value)
 	}
 	if value, ok := cruo.mutation.ToUserId(); ok {
-		_spec.SetField(chatrecord.FieldToUserId, field.TypeString, value)
+		_spec.SetField(chatrecord.FieldToUserId, field.TypeInt, value)
+	}
+	if value, ok := cruo.mutation.AddedToUserId(); ok {
+		_spec.AddField(chatrecord.FieldToUserId, field.TypeInt, value)
 	}
 	if value, ok := cruo.mutation.MsgType(); ok {
-		_spec.SetField(chatrecord.FieldMsgType, field.TypeString, value)
+		_spec.SetField(chatrecord.FieldMsgType, field.TypeInt, value)
+	}
+	if value, ok := cruo.mutation.AddedMsgType(); ok {
+		_spec.AddField(chatrecord.FieldMsgType, field.TypeInt, value)
+	}
+	if value, ok := cruo.mutation.IsGroup(); ok {
+		_spec.SetField(chatrecord.FieldIsGroup, field.TypeBool, value)
+	}
+	if value, ok := cruo.mutation.GroupId(); ok {
+		_spec.SetField(chatrecord.FieldGroupId, field.TypeInt, value)
+	}
+	if value, ok := cruo.mutation.AddedGroupId(); ok {
+		_spec.AddField(chatrecord.FieldGroupId, field.TypeInt, value)
+	}
+	if cruo.mutation.GroupIdCleared() {
+		_spec.ClearField(chatrecord.FieldGroupId, field.TypeInt)
 	}
 	if value, ok := cruo.mutation.CreateTime(); ok {
 		_spec.SetField(chatrecord.FieldCreateTime, field.TypeTime, value)

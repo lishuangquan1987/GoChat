@@ -18,7 +18,7 @@ type VideoMessage struct {
 	ID int `json:"id,omitempty"`
 	// 消息ID,由发送者产生
 	MsgId string `json:"msgId,omitempty"`
-	// 视频消息
+	// 视频URL
 	VideoUrl     string `json:"videoUrl,omitempty"`
 	selectValues sql.SelectValues
 }

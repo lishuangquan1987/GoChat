@@ -14,7 +14,7 @@ type VideoMessage struct {
 func (VideoMessage) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("msgId").NotEmpty().Comment("消息ID,由发送者产生"),
-		field.String("videoUrl").NotEmpty().Comment("视频消息"),
+		field.String("videoUrl").NotEmpty().Comment("视频URL"),
 	}
 }
 

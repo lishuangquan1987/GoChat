@@ -3,6 +3,8 @@
 package group
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
 )
 
@@ -53,12 +55,8 @@ var (
 	GroupIdValidator func(string) error
 	// GroupNameValidator is a validator for the "groupName" field. It is called by the builders before save.
 	GroupNameValidator func(string) error
-	// OwnerIdValidator is a validator for the "ownerId" field. It is called by the builders before save.
-	OwnerIdValidator func(string) error
-	// CreateUserIdValidator is a validator for the "createUserId" field. It is called by the builders before save.
-	CreateUserIdValidator func(string) error
-	// CreateTimeValidator is a validator for the "createTime" field. It is called by the builders before save.
-	CreateTimeValidator func(string) error
+	// DefaultCreateTime holds the default value on creation for the "createTime" field.
+	DefaultCreateTime func() time.Time
 )
 
 // OrderOption defines the ordering options for the Group queries.

@@ -4,10 +4,12 @@ package ent
 
 import (
 	"gochat_server/ent/chatrecord"
-	"gochat_server/ent/friendrelationship"
+	"gochat_server/ent/friendrequest"
 	"gochat_server/ent/group"
 	"gochat_server/ent/groupchatrecord"
 	"gochat_server/ent/imagemessage"
+	"gochat_server/ent/message"
+	"gochat_server/ent/messagestatus"
 	"gochat_server/ent/schema"
 	"gochat_server/ent/textmessage"
 	"gochat_server/ent/user"
@@ -25,32 +27,24 @@ func init() {
 	chatrecordDescMsgId := chatrecordFields[0].Descriptor()
 	// chatrecord.MsgIdValidator is a validator for the "msgId" field. It is called by the builders before save.
 	chatrecord.MsgIdValidator = chatrecordDescMsgId.Validators[0].(func(string) error)
-	// chatrecordDescFromUserId is the schema descriptor for fromUserId field.
-	chatrecordDescFromUserId := chatrecordFields[1].Descriptor()
-	// chatrecord.FromUserIdValidator is a validator for the "fromUserId" field. It is called by the builders before save.
-	chatrecord.FromUserIdValidator = chatrecordDescFromUserId.Validators[0].(func(string) error)
-	// chatrecordDescToUserId is the schema descriptor for toUserId field.
-	chatrecordDescToUserId := chatrecordFields[2].Descriptor()
-	// chatrecord.ToUserIdValidator is a validator for the "toUserId" field. It is called by the builders before save.
-	chatrecord.ToUserIdValidator = chatrecordDescToUserId.Validators[0].(func(string) error)
-	// chatrecordDescMsgType is the schema descriptor for msgType field.
-	chatrecordDescMsgType := chatrecordFields[3].Descriptor()
-	// chatrecord.MsgTypeValidator is a validator for the "msgType" field. It is called by the builders before save.
-	chatrecord.MsgTypeValidator = chatrecordDescMsgType.Validators[0].(func(string) error)
+	// chatrecordDescIsGroup is the schema descriptor for isGroup field.
+	chatrecordDescIsGroup := chatrecordFields[4].Descriptor()
+	// chatrecord.DefaultIsGroup holds the default value on creation for the isGroup field.
+	chatrecord.DefaultIsGroup = chatrecordDescIsGroup.Default.(bool)
 	// chatrecordDescCreateTime is the schema descriptor for createTime field.
-	chatrecordDescCreateTime := chatrecordFields[4].Descriptor()
+	chatrecordDescCreateTime := chatrecordFields[6].Descriptor()
 	// chatrecord.DefaultCreateTime holds the default value on creation for the createTime field.
 	chatrecord.DefaultCreateTime = chatrecordDescCreateTime.Default.(func() time.Time)
-	friendrelationshipFields := schema.FriendRelationship{}.Fields()
-	_ = friendrelationshipFields
-	// friendrelationshipDescUserId is the schema descriptor for userId field.
-	friendrelationshipDescUserId := friendrelationshipFields[0].Descriptor()
-	// friendrelationship.UserIdValidator is a validator for the "userId" field. It is called by the builders before save.
-	friendrelationship.UserIdValidator = friendrelationshipDescUserId.Validators[0].(func(string) error)
-	// friendrelationshipDescFriendId is the schema descriptor for friendId field.
-	friendrelationshipDescFriendId := friendrelationshipFields[1].Descriptor()
-	// friendrelationship.FriendIdValidator is a validator for the "friendId" field. It is called by the builders before save.
-	friendrelationship.FriendIdValidator = friendrelationshipDescFriendId.Validators[0].(func(string) error)
+	friendrequestFields := schema.FriendRequest{}.Fields()
+	_ = friendrequestFields
+	// friendrequestDescStatus is the schema descriptor for status field.
+	friendrequestDescStatus := friendrequestFields[3].Descriptor()
+	// friendrequest.DefaultStatus holds the default value on creation for the status field.
+	friendrequest.DefaultStatus = friendrequestDescStatus.Default.(int)
+	// friendrequestDescCreateTime is the schema descriptor for createTime field.
+	friendrequestDescCreateTime := friendrequestFields[4].Descriptor()
+	// friendrequest.DefaultCreateTime holds the default value on creation for the createTime field.
+	friendrequest.DefaultCreateTime = friendrequestDescCreateTime.Default.(func() time.Time)
 	groupFields := schema.Group{}.Fields()
 	_ = groupFields
 	// groupDescGroupId is the schema descriptor for groupId field.
@@ -61,18 +55,10 @@ func init() {
 	groupDescGroupName := groupFields[1].Descriptor()
 	// group.GroupNameValidator is a validator for the "groupName" field. It is called by the builders before save.
 	group.GroupNameValidator = groupDescGroupName.Validators[0].(func(string) error)
-	// groupDescOwnerId is the schema descriptor for ownerId field.
-	groupDescOwnerId := groupFields[2].Descriptor()
-	// group.OwnerIdValidator is a validator for the "ownerId" field. It is called by the builders before save.
-	group.OwnerIdValidator = groupDescOwnerId.Validators[0].(func(string) error)
-	// groupDescCreateUserId is the schema descriptor for createUserId field.
-	groupDescCreateUserId := groupFields[3].Descriptor()
-	// group.CreateUserIdValidator is a validator for the "createUserId" field. It is called by the builders before save.
-	group.CreateUserIdValidator = groupDescCreateUserId.Validators[0].(func(string) error)
 	// groupDescCreateTime is the schema descriptor for createTime field.
 	groupDescCreateTime := groupFields[4].Descriptor()
-	// group.CreateTimeValidator is a validator for the "createTime" field. It is called by the builders before save.
-	group.CreateTimeValidator = groupDescCreateTime.Validators[0].(func(string) error)
+	// group.DefaultCreateTime holds the default value on creation for the createTime field.
+	group.DefaultCreateTime = groupDescCreateTime.Default.(func() time.Time)
 	groupchatrecordFields := schema.GroupChatRecord{}.Fields()
 	_ = groupchatrecordFields
 	// groupchatrecordDescMsgId is the schema descriptor for msgId field.
@@ -105,6 +91,34 @@ func init() {
 	imagemessageDescImageUrl := imagemessageFields[1].Descriptor()
 	// imagemessage.ImageUrlValidator is a validator for the "imageUrl" field. It is called by the builders before save.
 	imagemessage.ImageUrlValidator = imagemessageDescImageUrl.Validators[0].(func(string) error)
+	messageFields := schema.Message{}.Fields()
+	_ = messageFields
+	// messageDescMsgId is the schema descriptor for msgId field.
+	messageDescMsgId := messageFields[0].Descriptor()
+	// message.MsgIdValidator is a validator for the "msgId" field. It is called by the builders before save.
+	message.MsgIdValidator = messageDescMsgId.Validators[0].(func(string) error)
+	// messageDescMsgType is the schema descriptor for msgType field.
+	messageDescMsgType := messageFields[1].Descriptor()
+	// message.MsgTypeValidator is a validator for the "msgType" field. It is called by the builders before save.
+	message.MsgTypeValidator = messageDescMsgType.Validators[0].(func(string) error)
+	// messageDescContent is the schema descriptor for content field.
+	messageDescContent := messageFields[2].Descriptor()
+	// message.ContentValidator is a validator for the "content" field. It is called by the builders before save.
+	message.ContentValidator = messageDescContent.Validators[0].(func(string) error)
+	// messageDescCreateTime is the schema descriptor for createTime field.
+	messageDescCreateTime := messageFields[3].Descriptor()
+	// message.DefaultCreateTime holds the default value on creation for the createTime field.
+	message.DefaultCreateTime = messageDescCreateTime.Default.(func() time.Time)
+	messagestatusFields := schema.MessageStatus{}.Fields()
+	_ = messagestatusFields
+	// messagestatusDescStatus is the schema descriptor for status field.
+	messagestatusDescStatus := messagestatusFields[1].Descriptor()
+	// messagestatus.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	messagestatus.StatusValidator = messagestatusDescStatus.Validators[0].(func(string) error)
+	// messagestatusDescUpdateTime is the schema descriptor for updateTime field.
+	messagestatusDescUpdateTime := messagestatusFields[3].Descriptor()
+	// messagestatus.DefaultUpdateTime holds the default value on creation for the updateTime field.
+	messagestatus.DefaultUpdateTime = messagestatusDescUpdateTime.Default.(func() time.Time)
 	textmessageFields := schema.TextMessage{}.Fields()
 	_ = textmessageFields
 	// textmessageDescMsgId is the schema descriptor for msgId field.

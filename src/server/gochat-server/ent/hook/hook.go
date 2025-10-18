@@ -32,6 +32,18 @@ func (f FriendRelationshipFunc) Mutate(ctx context.Context, m ent.Mutation) (ent
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FriendRelationshipMutation", m)
 }
 
+// The FriendRequestFunc type is an adapter to allow the use of ordinary
+// function as FriendRequest mutator.
+type FriendRequestFunc func(context.Context, *ent.FriendRequestMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FriendRequestFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FriendRequestMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FriendRequestMutation", m)
+}
+
 // The GroupFunc type is an adapter to allow the use of ordinary
 // function as Group mutator.
 type GroupFunc func(context.Context, *ent.GroupMutation) (ent.Value, error)
@@ -66,6 +78,30 @@ func (f ImageMessageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ImageMessageMutation", m)
+}
+
+// The MessageFunc type is an adapter to allow the use of ordinary
+// function as Message mutator.
+type MessageFunc func(context.Context, *ent.MessageMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MessageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MessageMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MessageMutation", m)
+}
+
+// The MessageStatusFunc type is an adapter to allow the use of ordinary
+// function as MessageStatus mutator.
+type MessageStatusFunc func(context.Context, *ent.MessageStatusMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MessageStatusFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MessageStatusMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MessageStatusMutation", m)
 }
 
 // The TextMessageFunc type is an adapter to allow the use of ordinary

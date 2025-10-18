@@ -60,18 +60,28 @@ func MsgId(v string) predicate.ChatRecord {
 }
 
 // FromUserId applies equality check predicate on the "fromUserId" field. It's identical to FromUserIdEQ.
-func FromUserId(v string) predicate.ChatRecord {
+func FromUserId(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldEQ(FieldFromUserId, v))
 }
 
 // ToUserId applies equality check predicate on the "toUserId" field. It's identical to ToUserIdEQ.
-func ToUserId(v string) predicate.ChatRecord {
+func ToUserId(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldEQ(FieldToUserId, v))
 }
 
 // MsgType applies equality check predicate on the "msgType" field. It's identical to MsgTypeEQ.
-func MsgType(v string) predicate.ChatRecord {
+func MsgType(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldEQ(FieldMsgType, v))
+}
+
+// IsGroup applies equality check predicate on the "isGroup" field. It's identical to IsGroupEQ.
+func IsGroup(v bool) predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldEQ(FieldIsGroup, v))
+}
+
+// GroupId applies equality check predicate on the "groupId" field. It's identical to GroupIdEQ.
+func GroupId(v int) predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldEQ(FieldGroupId, v))
 }
 
 // CreateTime applies equality check predicate on the "createTime" field. It's identical to CreateTimeEQ.
@@ -145,198 +155,183 @@ func MsgIdContainsFold(v string) predicate.ChatRecord {
 }
 
 // FromUserIdEQ applies the EQ predicate on the "fromUserId" field.
-func FromUserIdEQ(v string) predicate.ChatRecord {
+func FromUserIdEQ(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldEQ(FieldFromUserId, v))
 }
 
 // FromUserIdNEQ applies the NEQ predicate on the "fromUserId" field.
-func FromUserIdNEQ(v string) predicate.ChatRecord {
+func FromUserIdNEQ(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldNEQ(FieldFromUserId, v))
 }
 
 // FromUserIdIn applies the In predicate on the "fromUserId" field.
-func FromUserIdIn(vs ...string) predicate.ChatRecord {
+func FromUserIdIn(vs ...int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldIn(FieldFromUserId, vs...))
 }
 
 // FromUserIdNotIn applies the NotIn predicate on the "fromUserId" field.
-func FromUserIdNotIn(vs ...string) predicate.ChatRecord {
+func FromUserIdNotIn(vs ...int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldNotIn(FieldFromUserId, vs...))
 }
 
 // FromUserIdGT applies the GT predicate on the "fromUserId" field.
-func FromUserIdGT(v string) predicate.ChatRecord {
+func FromUserIdGT(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldGT(FieldFromUserId, v))
 }
 
 // FromUserIdGTE applies the GTE predicate on the "fromUserId" field.
-func FromUserIdGTE(v string) predicate.ChatRecord {
+func FromUserIdGTE(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldGTE(FieldFromUserId, v))
 }
 
 // FromUserIdLT applies the LT predicate on the "fromUserId" field.
-func FromUserIdLT(v string) predicate.ChatRecord {
+func FromUserIdLT(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldLT(FieldFromUserId, v))
 }
 
 // FromUserIdLTE applies the LTE predicate on the "fromUserId" field.
-func FromUserIdLTE(v string) predicate.ChatRecord {
+func FromUserIdLTE(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldLTE(FieldFromUserId, v))
 }
 
-// FromUserIdContains applies the Contains predicate on the "fromUserId" field.
-func FromUserIdContains(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldContains(FieldFromUserId, v))
-}
-
-// FromUserIdHasPrefix applies the HasPrefix predicate on the "fromUserId" field.
-func FromUserIdHasPrefix(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldHasPrefix(FieldFromUserId, v))
-}
-
-// FromUserIdHasSuffix applies the HasSuffix predicate on the "fromUserId" field.
-func FromUserIdHasSuffix(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldHasSuffix(FieldFromUserId, v))
-}
-
-// FromUserIdEqualFold applies the EqualFold predicate on the "fromUserId" field.
-func FromUserIdEqualFold(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldEqualFold(FieldFromUserId, v))
-}
-
-// FromUserIdContainsFold applies the ContainsFold predicate on the "fromUserId" field.
-func FromUserIdContainsFold(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldContainsFold(FieldFromUserId, v))
-}
-
 // ToUserIdEQ applies the EQ predicate on the "toUserId" field.
-func ToUserIdEQ(v string) predicate.ChatRecord {
+func ToUserIdEQ(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldEQ(FieldToUserId, v))
 }
 
 // ToUserIdNEQ applies the NEQ predicate on the "toUserId" field.
-func ToUserIdNEQ(v string) predicate.ChatRecord {
+func ToUserIdNEQ(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldNEQ(FieldToUserId, v))
 }
 
 // ToUserIdIn applies the In predicate on the "toUserId" field.
-func ToUserIdIn(vs ...string) predicate.ChatRecord {
+func ToUserIdIn(vs ...int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldIn(FieldToUserId, vs...))
 }
 
 // ToUserIdNotIn applies the NotIn predicate on the "toUserId" field.
-func ToUserIdNotIn(vs ...string) predicate.ChatRecord {
+func ToUserIdNotIn(vs ...int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldNotIn(FieldToUserId, vs...))
 }
 
 // ToUserIdGT applies the GT predicate on the "toUserId" field.
-func ToUserIdGT(v string) predicate.ChatRecord {
+func ToUserIdGT(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldGT(FieldToUserId, v))
 }
 
 // ToUserIdGTE applies the GTE predicate on the "toUserId" field.
-func ToUserIdGTE(v string) predicate.ChatRecord {
+func ToUserIdGTE(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldGTE(FieldToUserId, v))
 }
 
 // ToUserIdLT applies the LT predicate on the "toUserId" field.
-func ToUserIdLT(v string) predicate.ChatRecord {
+func ToUserIdLT(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldLT(FieldToUserId, v))
 }
 
 // ToUserIdLTE applies the LTE predicate on the "toUserId" field.
-func ToUserIdLTE(v string) predicate.ChatRecord {
+func ToUserIdLTE(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldLTE(FieldToUserId, v))
 }
 
-// ToUserIdContains applies the Contains predicate on the "toUserId" field.
-func ToUserIdContains(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldContains(FieldToUserId, v))
-}
-
-// ToUserIdHasPrefix applies the HasPrefix predicate on the "toUserId" field.
-func ToUserIdHasPrefix(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldHasPrefix(FieldToUserId, v))
-}
-
-// ToUserIdHasSuffix applies the HasSuffix predicate on the "toUserId" field.
-func ToUserIdHasSuffix(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldHasSuffix(FieldToUserId, v))
-}
-
-// ToUserIdEqualFold applies the EqualFold predicate on the "toUserId" field.
-func ToUserIdEqualFold(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldEqualFold(FieldToUserId, v))
-}
-
-// ToUserIdContainsFold applies the ContainsFold predicate on the "toUserId" field.
-func ToUserIdContainsFold(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldContainsFold(FieldToUserId, v))
-}
-
 // MsgTypeEQ applies the EQ predicate on the "msgType" field.
-func MsgTypeEQ(v string) predicate.ChatRecord {
+func MsgTypeEQ(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldEQ(FieldMsgType, v))
 }
 
 // MsgTypeNEQ applies the NEQ predicate on the "msgType" field.
-func MsgTypeNEQ(v string) predicate.ChatRecord {
+func MsgTypeNEQ(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldNEQ(FieldMsgType, v))
 }
 
 // MsgTypeIn applies the In predicate on the "msgType" field.
-func MsgTypeIn(vs ...string) predicate.ChatRecord {
+func MsgTypeIn(vs ...int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldIn(FieldMsgType, vs...))
 }
 
 // MsgTypeNotIn applies the NotIn predicate on the "msgType" field.
-func MsgTypeNotIn(vs ...string) predicate.ChatRecord {
+func MsgTypeNotIn(vs ...int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldNotIn(FieldMsgType, vs...))
 }
 
 // MsgTypeGT applies the GT predicate on the "msgType" field.
-func MsgTypeGT(v string) predicate.ChatRecord {
+func MsgTypeGT(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldGT(FieldMsgType, v))
 }
 
 // MsgTypeGTE applies the GTE predicate on the "msgType" field.
-func MsgTypeGTE(v string) predicate.ChatRecord {
+func MsgTypeGTE(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldGTE(FieldMsgType, v))
 }
 
 // MsgTypeLT applies the LT predicate on the "msgType" field.
-func MsgTypeLT(v string) predicate.ChatRecord {
+func MsgTypeLT(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldLT(FieldMsgType, v))
 }
 
 // MsgTypeLTE applies the LTE predicate on the "msgType" field.
-func MsgTypeLTE(v string) predicate.ChatRecord {
+func MsgTypeLTE(v int) predicate.ChatRecord {
 	return predicate.ChatRecord(sql.FieldLTE(FieldMsgType, v))
 }
 
-// MsgTypeContains applies the Contains predicate on the "msgType" field.
-func MsgTypeContains(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldContains(FieldMsgType, v))
+// IsGroupEQ applies the EQ predicate on the "isGroup" field.
+func IsGroupEQ(v bool) predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldEQ(FieldIsGroup, v))
 }
 
-// MsgTypeHasPrefix applies the HasPrefix predicate on the "msgType" field.
-func MsgTypeHasPrefix(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldHasPrefix(FieldMsgType, v))
+// IsGroupNEQ applies the NEQ predicate on the "isGroup" field.
+func IsGroupNEQ(v bool) predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldNEQ(FieldIsGroup, v))
 }
 
-// MsgTypeHasSuffix applies the HasSuffix predicate on the "msgType" field.
-func MsgTypeHasSuffix(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldHasSuffix(FieldMsgType, v))
+// GroupIdEQ applies the EQ predicate on the "groupId" field.
+func GroupIdEQ(v int) predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldEQ(FieldGroupId, v))
 }
 
-// MsgTypeEqualFold applies the EqualFold predicate on the "msgType" field.
-func MsgTypeEqualFold(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldEqualFold(FieldMsgType, v))
+// GroupIdNEQ applies the NEQ predicate on the "groupId" field.
+func GroupIdNEQ(v int) predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldNEQ(FieldGroupId, v))
 }
 
-// MsgTypeContainsFold applies the ContainsFold predicate on the "msgType" field.
-func MsgTypeContainsFold(v string) predicate.ChatRecord {
-	return predicate.ChatRecord(sql.FieldContainsFold(FieldMsgType, v))
+// GroupIdIn applies the In predicate on the "groupId" field.
+func GroupIdIn(vs ...int) predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldIn(FieldGroupId, vs...))
+}
+
+// GroupIdNotIn applies the NotIn predicate on the "groupId" field.
+func GroupIdNotIn(vs ...int) predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldNotIn(FieldGroupId, vs...))
+}
+
+// GroupIdGT applies the GT predicate on the "groupId" field.
+func GroupIdGT(v int) predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldGT(FieldGroupId, v))
+}
+
+// GroupIdGTE applies the GTE predicate on the "groupId" field.
+func GroupIdGTE(v int) predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldGTE(FieldGroupId, v))
+}
+
+// GroupIdLT applies the LT predicate on the "groupId" field.
+func GroupIdLT(v int) predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldLT(FieldGroupId, v))
+}
+
+// GroupIdLTE applies the LTE predicate on the "groupId" field.
+func GroupIdLTE(v int) predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldLTE(FieldGroupId, v))
+}
+
+// GroupIdIsNil applies the IsNil predicate on the "groupId" field.
+func GroupIdIsNil() predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldIsNull(FieldGroupId))
+}
+
+// GroupIdNotNil applies the NotNil predicate on the "groupId" field.
+func GroupIdNotNil() predicate.ChatRecord {
+	return predicate.ChatRecord(sql.FieldNotNull(FieldGroupId))
 }
 
 // CreateTimeEQ applies the EQ predicate on the "createTime" field.

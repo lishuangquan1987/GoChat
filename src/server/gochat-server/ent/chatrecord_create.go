@@ -27,20 +27,48 @@ func (crc *ChatRecordCreate) SetMsgId(s string) *ChatRecordCreate {
 }
 
 // SetFromUserId sets the "fromUserId" field.
-func (crc *ChatRecordCreate) SetFromUserId(s string) *ChatRecordCreate {
-	crc.mutation.SetFromUserId(s)
+func (crc *ChatRecordCreate) SetFromUserId(i int) *ChatRecordCreate {
+	crc.mutation.SetFromUserId(i)
 	return crc
 }
 
 // SetToUserId sets the "toUserId" field.
-func (crc *ChatRecordCreate) SetToUserId(s string) *ChatRecordCreate {
-	crc.mutation.SetToUserId(s)
+func (crc *ChatRecordCreate) SetToUserId(i int) *ChatRecordCreate {
+	crc.mutation.SetToUserId(i)
 	return crc
 }
 
 // SetMsgType sets the "msgType" field.
-func (crc *ChatRecordCreate) SetMsgType(s string) *ChatRecordCreate {
-	crc.mutation.SetMsgType(s)
+func (crc *ChatRecordCreate) SetMsgType(i int) *ChatRecordCreate {
+	crc.mutation.SetMsgType(i)
+	return crc
+}
+
+// SetIsGroup sets the "isGroup" field.
+func (crc *ChatRecordCreate) SetIsGroup(b bool) *ChatRecordCreate {
+	crc.mutation.SetIsGroup(b)
+	return crc
+}
+
+// SetNillableIsGroup sets the "isGroup" field if the given value is not nil.
+func (crc *ChatRecordCreate) SetNillableIsGroup(b *bool) *ChatRecordCreate {
+	if b != nil {
+		crc.SetIsGroup(*b)
+	}
+	return crc
+}
+
+// SetGroupId sets the "groupId" field.
+func (crc *ChatRecordCreate) SetGroupId(i int) *ChatRecordCreate {
+	crc.mutation.SetGroupId(i)
+	return crc
+}
+
+// SetNillableGroupId sets the "groupId" field if the given value is not nil.
+func (crc *ChatRecordCreate) SetNillableGroupId(i *int) *ChatRecordCreate {
+	if i != nil {
+		crc.SetGroupId(*i)
+	}
 	return crc
 }
 
@@ -93,6 +121,10 @@ func (crc *ChatRecordCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (crc *ChatRecordCreate) defaults() {
+	if _, ok := crc.mutation.IsGroup(); !ok {
+		v := chatrecord.DefaultIsGroup
+		crc.mutation.SetIsGroup(v)
+	}
 	if _, ok := crc.mutation.CreateTime(); !ok {
 		v := chatrecord.DefaultCreateTime()
 		crc.mutation.SetCreateTime(v)
@@ -112,26 +144,14 @@ func (crc *ChatRecordCreate) check() error {
 	if _, ok := crc.mutation.FromUserId(); !ok {
 		return &ValidationError{Name: "fromUserId", err: errors.New(`ent: missing required field "ChatRecord.fromUserId"`)}
 	}
-	if v, ok := crc.mutation.FromUserId(); ok {
-		if err := chatrecord.FromUserIdValidator(v); err != nil {
-			return &ValidationError{Name: "fromUserId", err: fmt.Errorf(`ent: validator failed for field "ChatRecord.fromUserId": %w`, err)}
-		}
-	}
 	if _, ok := crc.mutation.ToUserId(); !ok {
 		return &ValidationError{Name: "toUserId", err: errors.New(`ent: missing required field "ChatRecord.toUserId"`)}
-	}
-	if v, ok := crc.mutation.ToUserId(); ok {
-		if err := chatrecord.ToUserIdValidator(v); err != nil {
-			return &ValidationError{Name: "toUserId", err: fmt.Errorf(`ent: validator failed for field "ChatRecord.toUserId": %w`, err)}
-		}
 	}
 	if _, ok := crc.mutation.MsgType(); !ok {
 		return &ValidationError{Name: "msgType", err: errors.New(`ent: missing required field "ChatRecord.msgType"`)}
 	}
-	if v, ok := crc.mutation.MsgType(); ok {
-		if err := chatrecord.MsgTypeValidator(v); err != nil {
-			return &ValidationError{Name: "msgType", err: fmt.Errorf(`ent: validator failed for field "ChatRecord.msgType": %w`, err)}
-		}
+	if _, ok := crc.mutation.IsGroup(); !ok {
+		return &ValidationError{Name: "isGroup", err: errors.New(`ent: missing required field "ChatRecord.isGroup"`)}
 	}
 	if _, ok := crc.mutation.CreateTime(); !ok {
 		return &ValidationError{Name: "createTime", err: errors.New(`ent: missing required field "ChatRecord.createTime"`)}
@@ -167,16 +187,24 @@ func (crc *ChatRecordCreate) createSpec() (*ChatRecord, *sqlgraph.CreateSpec) {
 		_node.MsgId = value
 	}
 	if value, ok := crc.mutation.FromUserId(); ok {
-		_spec.SetField(chatrecord.FieldFromUserId, field.TypeString, value)
+		_spec.SetField(chatrecord.FieldFromUserId, field.TypeInt, value)
 		_node.FromUserId = value
 	}
 	if value, ok := crc.mutation.ToUserId(); ok {
-		_spec.SetField(chatrecord.FieldToUserId, field.TypeString, value)
+		_spec.SetField(chatrecord.FieldToUserId, field.TypeInt, value)
 		_node.ToUserId = value
 	}
 	if value, ok := crc.mutation.MsgType(); ok {
-		_spec.SetField(chatrecord.FieldMsgType, field.TypeString, value)
+		_spec.SetField(chatrecord.FieldMsgType, field.TypeInt, value)
 		_node.MsgType = value
+	}
+	if value, ok := crc.mutation.IsGroup(); ok {
+		_spec.SetField(chatrecord.FieldIsGroup, field.TypeBool, value)
+		_node.IsGroup = value
+	}
+	if value, ok := crc.mutation.GroupId(); ok {
+		_spec.SetField(chatrecord.FieldGroupId, field.TypeInt, value)
+		_node.GroupId = value
 	}
 	if value, ok := crc.mutation.CreateTime(); ok {
 		_spec.SetField(chatrecord.FieldCreateTime, field.TypeTime, value)

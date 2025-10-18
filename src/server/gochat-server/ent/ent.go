@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"gochat_server/ent/chatrecord"
 	"gochat_server/ent/friendrelationship"
+	"gochat_server/ent/friendrequest"
 	"gochat_server/ent/group"
 	"gochat_server/ent/groupchatrecord"
 	"gochat_server/ent/imagemessage"
+	"gochat_server/ent/message"
+	"gochat_server/ent/messagestatus"
 	"gochat_server/ent/textmessage"
 	"gochat_server/ent/user"
 	"gochat_server/ent/videomessage"
@@ -82,9 +85,12 @@ func checkColumn(table, column string) error {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			chatrecord.Table:         chatrecord.ValidColumn,
 			friendrelationship.Table: friendrelationship.ValidColumn,
+			friendrequest.Table:      friendrequest.ValidColumn,
 			group.Table:              group.ValidColumn,
 			groupchatrecord.Table:    groupchatrecord.ValidColumn,
 			imagemessage.Table:       imagemessage.ValidColumn,
+			message.Table:            message.ValidColumn,
+			messagestatus.Table:      messagestatus.ValidColumn,
 			textmessage.Table:        textmessage.ValidColumn,
 			user.Table:               user.ValidColumn,
 			videomessage.Table:       videomessage.ValidColumn,

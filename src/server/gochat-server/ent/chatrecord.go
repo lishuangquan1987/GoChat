@@ -17,14 +17,18 @@ type ChatRecord struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// 消息ID,由发送者产生
+	// 消息ID，关联Message表
 	MsgId string `json:"msgId,omitempty"`
 	// 发送者ID
-	FromUserId string `json:"fromUserId,omitempty"`
+	FromUserId int `json:"fromUserId,omitempty"`
 	// 接收者ID
-	ToUserId string `json:"toUserId,omitempty"`
-	// 消息类型
-	MsgType string `json:"msgType,omitempty"`
+	ToUserId int `json:"toUserId,omitempty"`
+	// 消息类型: 1-文本, 2-图片, 3-视频
+	MsgType int `json:"msgType,omitempty"`
+	// 是否为群聊
+	IsGroup bool `json:"isGroup,omitempty"`
+	// 群聊ID，仅群聊时有值
+	GroupId int `json:"groupId,omitempty"`
 	// 创建时间
 	CreateTime   time.Time `json:"createTime,omitempty"`
 	selectValues sql.SelectValues
@@ -35,9 +39,11 @@ func (*ChatRecord) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case chatrecord.FieldID:
+		case chatrecord.FieldIsGroup:
+			values[i] = new(sql.NullBool)
+		case chatrecord.FieldID, chatrecord.FieldFromUserId, chatrecord.FieldToUserId, chatrecord.FieldMsgType, chatrecord.FieldGroupId:
 			values[i] = new(sql.NullInt64)
-		case chatrecord.FieldMsgId, chatrecord.FieldFromUserId, chatrecord.FieldToUserId, chatrecord.FieldMsgType:
+		case chatrecord.FieldMsgId:
 			values[i] = new(sql.NullString)
 		case chatrecord.FieldCreateTime:
 			values[i] = new(sql.NullTime)
@@ -69,22 +75,34 @@ func (cr *ChatRecord) assignValues(columns []string, values []any) error {
 				cr.MsgId = value.String
 			}
 		case chatrecord.FieldFromUserId:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field fromUserId", values[i])
 			} else if value.Valid {
-				cr.FromUserId = value.String
+				cr.FromUserId = int(value.Int64)
 			}
 		case chatrecord.FieldToUserId:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field toUserId", values[i])
 			} else if value.Valid {
-				cr.ToUserId = value.String
+				cr.ToUserId = int(value.Int64)
 			}
 		case chatrecord.FieldMsgType:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field msgType", values[i])
 			} else if value.Valid {
-				cr.MsgType = value.String
+				cr.MsgType = int(value.Int64)
+			}
+		case chatrecord.FieldIsGroup:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field isGroup", values[i])
+			} else if value.Valid {
+				cr.IsGroup = value.Bool
+			}
+		case chatrecord.FieldGroupId:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field groupId", values[i])
+			} else if value.Valid {
+				cr.GroupId = int(value.Int64)
 			}
 		case chatrecord.FieldCreateTime:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -132,13 +150,19 @@ func (cr *ChatRecord) String() string {
 	builder.WriteString(cr.MsgId)
 	builder.WriteString(", ")
 	builder.WriteString("fromUserId=")
-	builder.WriteString(cr.FromUserId)
+	builder.WriteString(fmt.Sprintf("%v", cr.FromUserId))
 	builder.WriteString(", ")
 	builder.WriteString("toUserId=")
-	builder.WriteString(cr.ToUserId)
+	builder.WriteString(fmt.Sprintf("%v", cr.ToUserId))
 	builder.WriteString(", ")
 	builder.WriteString("msgType=")
-	builder.WriteString(cr.MsgType)
+	builder.WriteString(fmt.Sprintf("%v", cr.MsgType))
+	builder.WriteString(", ")
+	builder.WriteString("isGroup=")
+	builder.WriteString(fmt.Sprintf("%v", cr.IsGroup))
+	builder.WriteString(", ")
+	builder.WriteString("groupId=")
+	builder.WriteString(fmt.Sprintf("%v", cr.GroupId))
 	builder.WriteString(", ")
 	builder.WriteString("createTime=")
 	builder.WriteString(cr.CreateTime.Format(time.ANSIC))

@@ -12,6 +12,9 @@ type ChatRecord func(*sql.Selector)
 // FriendRelationship is the predicate function for friendrelationship builders.
 type FriendRelationship func(*sql.Selector)
 
+// FriendRequest is the predicate function for friendrequest builders.
+type FriendRequest func(*sql.Selector)
+
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 
@@ -20,6 +23,12 @@ type GroupChatRecord func(*sql.Selector)
 
 // ImageMessage is the predicate function for imagemessage builders.
 type ImageMessage func(*sql.Selector)
+
+// Message is the predicate function for message builders.
+type Message func(*sql.Selector)
+
+// MessageStatus is the predicate function for messagestatus builders.
+type MessageStatus func(*sql.Selector)
 
 // TextMessage is the predicate function for textmessage builders.
 type TextMessage func(*sql.Selector)

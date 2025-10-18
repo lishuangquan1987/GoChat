@@ -16,12 +16,18 @@ type Tx struct {
 	ChatRecord *ChatRecordClient
 	// FriendRelationship is the client for interacting with the FriendRelationship builders.
 	FriendRelationship *FriendRelationshipClient
+	// FriendRequest is the client for interacting with the FriendRequest builders.
+	FriendRequest *FriendRequestClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// GroupChatRecord is the client for interacting with the GroupChatRecord builders.
 	GroupChatRecord *GroupChatRecordClient
 	// ImageMessage is the client for interacting with the ImageMessage builders.
 	ImageMessage *ImageMessageClient
+	// Message is the client for interacting with the Message builders.
+	Message *MessageClient
+	// MessageStatus is the client for interacting with the MessageStatus builders.
+	MessageStatus *MessageStatusClient
 	// TextMessage is the client for interacting with the TextMessage builders.
 	TextMessage *TextMessageClient
 	// User is the client for interacting with the User builders.
@@ -161,9 +167,12 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.ChatRecord = NewChatRecordClient(tx.config)
 	tx.FriendRelationship = NewFriendRelationshipClient(tx.config)
+	tx.FriendRequest = NewFriendRequestClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
 	tx.GroupChatRecord = NewGroupChatRecordClient(tx.config)
 	tx.ImageMessage = NewImageMessageClient(tx.config)
+	tx.Message = NewMessageClient(tx.config)
+	tx.MessageStatus = NewMessageStatusClient(tx.config)
 	tx.TextMessage = NewTextMessageClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.VideoMessage = NewVideoMessageClient(tx.config)
