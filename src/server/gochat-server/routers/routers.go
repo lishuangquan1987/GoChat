@@ -71,5 +71,15 @@ func RegisterRoutes(r *gin.Engine) {
 			groups.DELETE("/:groupId/members/:userId", controllers.RemoveGroupMember)
 			groups.GET("/:groupId/members", controllers.GetGroupMembers)
 		}
+
+		// 性能监控相关路由（需要认证）
+		performance := api.Group("/performance")
+		performance.Use(middlewares.AuthMiddleware())
+		{
+			performance.GET("/stats", controllers.GetPerformanceStats)
+			performance.GET("/optimization", controllers.GetDatabaseOptimizationSuggestions)
+			performance.POST("/cache/warmup", controllers.WarmupCache)
+			performance.GET("/cache/stats", controllers.GetCacheStats)
+		}
 	}
 }

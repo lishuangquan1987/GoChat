@@ -8,8 +8,11 @@ import '../models/user.dart';
 import '../providers/chat_provider.dart';
 import '../providers/user_provider.dart';
 import '../providers/group_provider.dart';
-import '../widgets/message_bubble.dart';
+
+import '../widgets/optimized_message_list.dart';
 import '../services/api_service.dart';
+import '../utils/performance_monitor.dart';
+import '../utils/image_cache_manager.dart';
 import 'group_detail_page.dart';
 
 class ChatPage extends StatefulWidget {
@@ -24,32 +27,31 @@ class ChatPage extends StatefulWidget {
   State<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin {
   final TextEditingController _textController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
+  final GlobalKey<OptimizedMessageListState> _messageListKey = GlobalKey();
   final ApiService _apiService = ApiService();
   final ImagePicker _imagePicker = ImagePicker();
+  final PerformanceMonitor _performanceMonitor = PerformanceMonitor();
+  final ImagePreloader _imagePreloader = ImagePreloader();
   bool _isLoading = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
+    _performanceMonitor.startTimer('chat_page_init');
     _loadChatHistory();
     _setupMessageListener();
-    _setupScrollListener();
     if (widget.conversation.type == ConversationType.group) {
       _loadGroupMembers();
     }
+    _performanceMonitor.endTimer('chat_page_init');
   }
   
-  void _setupScrollListener() {
-    _scrollController.addListener(() {
-      // 当滚动到顶部时加载更多历史消息
-      if (_scrollController.position.pixels <= 100) {
-        _loadMoreHistory();
-      }
-    });
-  }
+
 
   Future<void> _loadGroupMembers() async {
     if (widget.conversation.group == null) return;
@@ -75,7 +77,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void dispose() {
     _textController.dispose();
-    _scrollController.dispose();
+    _imagePreloader.clearPreloadingState();
     super.dispose();
   }
 
@@ -104,13 +106,37 @@ class _ChatPageState extends State<ChatPage> {
           }
           
           if (isCurrentConversation) {
-            chatProvider.addMessage(widget.conversation.id, message);
-            _scrollToBottom();
+            // 标记为当前聊天，不会增加未读数
+            chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
+            
+            // 自动滚动到底部
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _messageListKey.currentState?.scrollToBottom();
+            });
+            
+            // 预加载图片消息
+            if (message.msgType == MessageType.image) {
+              _imagePreloader.preloadImagesForMessages([message.content]);
+            }
             
             // 显示通知（如果消息不是自己发送的）
             if (message.fromUserId != userProvider.currentUser?.id) {
               _showMessageNotification(message);
             }
+            
+            // 发送消息送达确认和已读确认（如果是接收到的消息）
+            if (message.fromUserId != userProvider.currentUser?.id) {
+              _markMessageAsDelivered(message);
+              _markMessageAsRead(message);
+            }
+          }
+        } else if (data['type'] == 'message_status') {
+          // 处理消息状态更新（已读、已送达等）
+          final msgId = data['msgId'] as String?;
+          final status = data['status'] as String?;
+          
+          if (msgId != null && status != null) {
+            _updateMessageStatus(msgId, status);
           }
         }
       });
@@ -131,6 +157,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _loadChatHistory() async {
+    _performanceMonitor.startTimer('load_chat_history');
     setState(() => _isLoading = true);
     try {
       final chatProvider = context.read<ChatProvider>();
@@ -162,8 +189,19 @@ class _ChatPageState extends State<ChatPage> {
             messages.length < total,
           );
           
+          // 预加载图片消息
+          final imageUrls = messages
+              .where((m) => m.msgType == MessageType.image)
+              .map((m) => m.content)
+              .toList();
+          if (imageUrls.isNotEmpty) {
+            _imagePreloader.preloadImagesForMessages(imageUrls);
+          }
+          
           // 加载完成后滚动到底部
-          _scrollToBottom();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _messageListKey.currentState?.scrollToBottom(animated: false);
+          });
         }
       }
     } catch (e) {
@@ -174,6 +212,7 @@ class _ChatPageState extends State<ChatPage> {
       }
     } finally {
       setState(() => _isLoading = false);
+      _performanceMonitor.endTimer('load_chat_history');
     }
   }
   
@@ -209,21 +248,10 @@ class _ChatPageState extends State<ChatPage> {
             .toList();
         
         if (mounted) {
-          // 保存当前滚动位置
-          final currentScrollPosition = _scrollController.position.pixels;
-          
           // 追加历史消息到列表开头
           chatProvider.setMessages(widget.conversation.id, messages, append: true);
           
-          // 恢复滚动位置（加上新消息的高度）
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_scrollController.hasClients) {
-              _scrollController.jumpTo(
-                _scrollController.position.maxScrollExtent - 
-                (_scrollController.position.maxScrollExtent - currentScrollPosition),
-              );
-            }
-          });
+          // 滚动位置由OptimizedMessageList自动处理
           
           // 检查是否还有更多消息
           if (messages.isEmpty) {
@@ -242,6 +270,7 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.conversation.title),
@@ -272,91 +301,21 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildMessageList() {
-    return Consumer2<ChatProvider, UserProvider>(
-      builder: (context, chatProvider, userProvider, child) {
-        final messages = chatProvider.getMessages(widget.conversation.id) ?? [];
-        final isLoadingMore = chatProvider.isLoadingMore(widget.conversation.id);
-        final hasMore = chatProvider.hasMoreMessages(widget.conversation.id);
-        
-        if (_isLoading && messages.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-        if (messages.isEmpty) {
-          return Center(
-            child: Text(
-              '暂无消息',
-              style: TextStyle(color: Colors.grey[600], fontSize: 16),
-            ),
-          );
-        }
-
-        return ListView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: messages.length + (hasMore ? 1 : 0),
-          itemBuilder: (context, index) {
-            // 显示加载更多指示器
-            if (index == 0 && hasMore) {
-              return Container(
-                padding: const EdgeInsets.all(16),
-                alignment: Alignment.center,
-                child: isLoadingMore
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(
-                        '下拉加载更多',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
-              );
-            }
-            
-            final messageIndex = hasMore ? index - 1 : index;
-            final message = messages[messageIndex];
-            final isMine = message.fromUserId == userProvider.currentUser?.id;
-            final isGroupChat = widget.conversation.type == ConversationType.group;
-            
-            // 获取发送者昵称（用于群聊）
-            String? senderNickname;
-            if (isGroupChat && !isMine) {
-              senderNickname = _getSenderNickname(message.fromUserId);
-            }
-            
-            return MessageBubble(
-              message: message,
-              isMine: isMine,
-              isGroupChat: isGroupChat,
-              senderNickname: senderNickname,
-              onRetry: message.status == MessageStatus.failed && isMine
-                  ? () => _retryMessage(message)
-                  : null,
-            );
-          },
-        );
-      },
+    return OptimizedMessageList(
+      key: _messageListKey,
+      conversationId: widget.conversation.id,
+      isGroupChat: widget.conversation.type == ConversationType.group,
+      groupId: widget.conversation.group?.id,
+      onLoadMore: _loadMoreHistory,
+      onRetryMessage: _retryMessage,
     );
   }
 
-  String? _getSenderNickname(int userId) {
-    // 从群成员中查找发送者昵称
-    if (widget.conversation.group != null) {
-      final groupProvider = context.read<GroupProvider>();
-      final members = groupProvider.getGroupMembers(widget.conversation.group!.id);
-      
-      if (members != null) {
-        try {
-          final sender = members.firstWhere((m) => m.id == userId);
-          return sender.nickname;
-        } catch (e) {
-          return '用户$userId';
-        }
-      }
-    }
-    return '用户$userId';
-  }
+
 
   Widget _buildInputArea() {
     return Container(
@@ -510,10 +469,10 @@ class _ChatPageState extends State<ChatPage> {
     );
 
     // 添加到消息列表
-    chatProvider.addMessage(widget.conversation.id, tempMessage);
+    chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
     
     // 滚动到底部
-    _scrollToBottom();
+    _messageListKey.currentState?.scrollToBottom();
 
     try {
       // 发送消息到服务器
@@ -527,11 +486,11 @@ class _ChatPageState extends State<ChatPage> {
       if (response.data['code'] == 0) {
         // 更新消息状态为已发送
         tempMessage.status = MessageStatus.sent;
-        chatProvider.addMessage(widget.conversation.id, tempMessage);
+        chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
       } else {
         // 发送失败
         tempMessage.status = MessageStatus.failed;
-        chatProvider.addMessage(widget.conversation.id, tempMessage);
+        chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -542,7 +501,7 @@ class _ChatPageState extends State<ChatPage> {
     } catch (e) {
       // 发送失败
       tempMessage.status = MessageStatus.failed;
-      chatProvider.addMessage(widget.conversation.id, tempMessage);
+      chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -552,24 +511,14 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      });
-    }
-  }
+
 
   void _retryMessage(Message message) async {
     final chatProvider = context.read<ChatProvider>();
     
     // 更新消息状态为发送中
     message.status = MessageStatus.sending;
-    chatProvider.addMessage(widget.conversation.id, message);
+    chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
 
     try {
       final response = await _apiService.sendMessage(
@@ -581,14 +530,14 @@ class _ChatPageState extends State<ChatPage> {
 
       if (response.data['code'] == 0) {
         message.status = MessageStatus.sent;
-        chatProvider.addMessage(widget.conversation.id, message);
+        chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
       } else {
         message.status = MessageStatus.failed;
-        chatProvider.addMessage(widget.conversation.id, message);
+        chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
       }
     } catch (e) {
       message.status = MessageStatus.failed;
-      chatProvider.addMessage(widget.conversation.id, message);
+      chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
     }
   }
 
@@ -708,8 +657,8 @@ class _ChatPageState extends State<ChatPage> {
         );
 
         // 添加到消息列表
-        chatProvider.addMessage(widget.conversation.id, message);
-        _scrollToBottom();
+        chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
+        _messageListKey.currentState?.scrollToBottom();
 
         // 发送消息
         final response = await _apiService.sendMessage(
@@ -721,10 +670,10 @@ class _ChatPageState extends State<ChatPage> {
 
         if (response.data['code'] == 0) {
           message.status = MessageStatus.sent;
-          chatProvider.addMessage(widget.conversation.id, message);
+          chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
         } else {
           message.status = MessageStatus.failed;
-          chatProvider.addMessage(widget.conversation.id, message);
+          chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
         }
       } else {
         if (mounted) {
@@ -752,5 +701,69 @@ class _ChatPageState extends State<ChatPage> {
         builder: (context) => GroupDetailPage(group: widget.conversation.group!),
       ),
     );
+  }
+
+  // 标记消息为已送达
+  void _markMessageAsDelivered(Message message) {
+    final userProvider = context.read<UserProvider>();
+    if (userProvider.wsService != null && userProvider.wsService!.isConnected) {
+      try {
+        userProvider.wsService!.sendMessage({
+          'type': 'delivered',
+          'data': {
+            'msgId': message.msgId,
+          },
+        });
+      } catch (e) {
+        print('Failed to mark message as delivered: $e');
+      }
+    }
+  }
+
+  // 标记消息为已读
+  void _markMessageAsRead(Message message) {
+    final userProvider = context.read<UserProvider>();
+    if (userProvider.wsService != null && userProvider.wsService!.isConnected) {
+      try {
+        userProvider.wsService!.sendMessage({
+          'type': 'read',
+          'data': {
+            'msgId': message.msgId,
+          },
+        });
+      } catch (e) {
+        print('Failed to mark message as read: $e');
+      }
+    }
+  }
+
+  // 更新消息状态
+  void _updateMessageStatus(String msgId, String status) {
+    final chatProvider = context.read<ChatProvider>();
+    final messages = chatProvider.getMessages(widget.conversation.id);
+    
+    if (messages != null) {
+      final messageIndex = messages.indexWhere((m) => m.msgId == msgId);
+      if (messageIndex != -1) {
+        final message = messages[messageIndex];
+        MessageStatus newStatus;
+        
+        switch (status) {
+          case 'delivered':
+            newStatus = MessageStatus.delivered;
+            break;
+          case 'read':
+            newStatus = MessageStatus.read;
+            break;
+          default:
+            return;
+        }
+        
+        if (message.status != newStatus) {
+          message.status = newStatus;
+          chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
+        }
+      }
+    }
   }
 }

@@ -33,9 +33,11 @@ type ServerConfig struct {
 }
 
 type RedkaConfig struct {
-	Enabled  bool   // 是否启用Redka缓存
-	Path     string // Redka数据库文件路径
-	CacheTTL int    // 缓存过期时间（秒）
+	Enabled     bool   // 是否启用Redka缓存
+	Path        string // Redka数据库文件路径
+	CacheTTL    int    // 普通缓存过期时间（秒）
+	HotDataTTL  int    // 热点数据缓存过期时间（秒）
+	MaxMemory   string // 最大内存使用量
 }
 
 func init() {

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/chat_provider.dart';
-import '../widgets/conversation_item.dart';
+import '../providers/user_provider.dart';
+
+import '../widgets/optimized_conversation_list.dart';
+import '../utils/performance_monitor.dart';
+import '../utils/desktop_notification.dart';
 import 'chat_page.dart';
 
 class ChatListPage extends StatefulWidget {
@@ -11,8 +15,15 @@ class ChatListPage extends StatefulWidget {
   State<ChatListPage> createState() => _ChatListPageState();
 }
 
-class _ChatListPageState extends State<ChatListPage> {
+class _ChatListPageState extends State<ChatListPage> with AutomaticKeepAliveClientMixin {
+  final PerformanceMonitor _performanceMonitor = PerformanceMonitor();
+
+  @override
+  bool get wantKeepAlive => true;
+
+
   Future<void> _handleRefresh() async {
+    _performanceMonitor.startTimer('conversation_list_refresh');
     try {
       // TODO: 从服务器获取最新的会话列表
       // 这里可以调用 API 获取会话列表并更新 ChatProvider
@@ -37,6 +48,8 @@ class _ChatListPageState extends State<ChatListPage> {
           ),
         );
       }
+    } finally {
+      _performanceMonitor.endTimer('conversation_list_refresh');
     }
   }
 
@@ -120,14 +133,20 @@ class _ChatListPageState extends State<ChatListPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'GoChat',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
+        title: Consumer<UserProvider>(
+          builder: (context, userProvider, child) {
+            final user = userProvider.currentUser;
+            return Text(
+              user?.nickname ?? 'GoChat',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            );
+          },
         ),
         backgroundColor: const Color(0xFF07C160),
         elevation: 0,
@@ -182,83 +201,35 @@ class _ChatListPageState extends State<ChatListPage> {
           ),
         ],
       ),
-      body: Consumer<ChatProvider>(
-        builder: (context, chatProvider, child) {
-          final conversations = chatProvider.conversations;
-          
-          if (conversations.isEmpty) {
-            return RefreshIndicator(
-              onRefresh: _handleRefresh,
-              color: const Color(0xFF07C160),
-              child: ListView(
-                children: [
-                  SizedBox(
-                    height: MediaQuery.of(context).size.height - 200,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.chat_bubble_outline,
-                            size: 80,
-                            color: Colors.grey[300],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            '暂无会话',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '下拉刷新或开始新的聊天',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[400],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        color: const Color(0xFF07C160),
+        child: OptimizedConversationList(
+          onConversationTap: (conversation) {
+            // 清除未读数量
+            final chatProvider = context.read<ChatProvider>();
+            chatProvider.clearUnreadCount(conversation.id);
+            
+            // 更新桌面通知状态
+            final totalUnread = chatProvider.conversations
+                .fold<int>(0, (sum, conv) => sum + conv.unreadCount);
+            DesktopNotification.updateUnreadStatus(unreadCount: totalUnread);
+            
+            // 导航到聊天页面
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatPage(conversation: conversation),
               ),
             );
-          }
-          
-          return RefreshIndicator(
-            onRefresh: _handleRefresh,
-            color: const Color(0xFF07C160),
-            child: ListView.separated(
-              itemCount: conversations.length,
-              separatorBuilder: (context, index) => Divider(
-                height: 1,
-                indent: 72,
-                color: Colors.grey[200],
-              ),
-              itemBuilder: (context, index) {
-                final conversation = conversations[index];
-                return ConversationItem(
-                  conversation: conversation,
-                  onTap: () {
-                    // 清除未读数量
-                    chatProvider.clearUnreadCount(conversation.id);
-                    
-                    // 导航到聊天页面
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatPage(conversation: conversation),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          );
-        },
+          },
+          onConversationLongPress: (conversation) {
+            // TODO: 显示会话操作菜单（删除、置顶等）
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('长按功能开发中...')),
+            );
+          },
+        ),
       ),
     );
   }

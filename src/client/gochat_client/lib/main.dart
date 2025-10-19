@@ -1,24 +1,87 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 import 'providers/user_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/friend_provider.dart';
 import 'providers/group_provider.dart';
+import 'providers/settings_provider.dart' as settings_provider;
 import 'pages/login_page.dart';
 import 'pages/home_page.dart';
+import 'pages/user_switcher_page.dart';
 import 'services/storage_service.dart';
+import 'utils/performance_monitor.dart';
+import 'utils/image_cache_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // 初始化窗口管理器（仅桌面平台）
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    await windowManager.ensureInitialized();
+    
+    WindowOptions windowOptions = const WindowOptions(
+      size: Size(1200, 800),
+      minimumSize: Size(800, 600),
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.normal,
+      windowButtonVisibility: true,
+    );
+    
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
+  
   // 初始化存储服务
   await StorageService.init();
   
-  runApp(const MyApp());
+  // 初始化设置
+  final settingsProvider = settings_provider.SettingsProvider();
+  await settingsProvider.initialize();
+  
+  // 初始化图片缓存管理器
+  ImageCacheManager().initialize();
+  
+  // 设置系统UI样式
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ),
+  );
+  
+  // 启动性能监控（仅在调试模式下）
+  if (kDebugMode) {
+    final monitor = PerformanceMonitor();
+    
+    // 定期检查内存使用
+    Timer.periodic(const Duration(seconds: 30), (_) {
+      monitor.checkMemoryUsage();
+    });
+    
+    // 监控帧率
+    WidgetsBinding.instance.addTimingsCallback((timings) {
+      for (final timing in timings) {
+        monitor.recordFrameTime(timing.totalSpan);
+      }
+    });
+  }
+  
+  runApp(MyApp(settingsProvider: settingsProvider));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final settings_provider.SettingsProvider settingsProvider;
+  
+  const MyApp({super.key, required this.settingsProvider});
 
   @override
   Widget build(BuildContext context) {
@@ -28,29 +91,77 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => FriendProvider()),
         ChangeNotifierProvider(create: (_) => GroupProvider()),
+        ChangeNotifierProvider.value(value: settingsProvider),
       ],
-      child: MaterialApp(
-        title: 'GoChat',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          // 微信绿色主题
-          primarySwatch: Colors.green,
-          primaryColor: const Color(0xFF07C160),
-          scaffoldBackgroundColor: const Color(0xFFEDEDED),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF07C160),
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF07C160),
-            primary: const Color(0xFF07C160),
-          ),
-          useMaterial3: true,
-        ),
-        home: const SplashPage(),
+      child: Consumer<settings_provider.SettingsProvider>(
+        builder: (context, settings, child) {
+          return MaterialApp(
+            title: 'GoChat',
+            debugShowCheckedModeBanner: false,
+            theme: _buildTheme(settings, false),
+            darkTheme: _buildTheme(settings, true),
+            themeMode: _getThemeMode(settings.themeMode),
+            home: const SplashPage(),
+          );
+        },
       ),
     );
+  }
+
+  ThemeData _buildTheme(settings_provider.SettingsProvider settings, bool isDark) {
+    final primaryColor = settings.primaryColor;
+    final brightness = isDark ? Brightness.dark : Brightness.light;
+    
+    return ThemeData(
+      brightness: brightness,
+      primarySwatch: _createMaterialColor(primaryColor),
+      primaryColor: primaryColor,
+      scaffoldBackgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFEDEDED),
+      appBarTheme: AppBarTheme(
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryColor,
+        primary: primaryColor,
+        brightness: brightness,
+      ),
+      useMaterial3: true,
+    );
+  }
+
+  MaterialColor _createMaterialColor(Color color) {
+    final strengths = <double>[.05];
+    final swatch = <int, Color>{};
+    final int r = color.red, g = color.green, b = color.blue;
+
+    for (int i = 1; i < 10; i++) {
+      strengths.add(0.1 * i);
+    }
+    
+    for (final strength in strengths) {
+      final double ds = 0.5 - strength;
+      swatch[(strength * 1000).round()] = Color.fromRGBO(
+        r + ((ds < 0 ? r : (255 - r)) * ds).round(),
+        g + ((ds < 0 ? g : (255 - g)) * ds).round(),
+        b + ((ds < 0 ? b : (255 - b)) * ds).round(),
+        1,
+      );
+    }
+    
+    return MaterialColor(color.value, swatch);
+  }
+
+  ThemeMode _getThemeMode(settings_provider.ThemeMode mode) {
+    switch (mode) {
+      case settings_provider.ThemeMode.system:
+        return ThemeMode.system;
+      case settings_provider.ThemeMode.light:
+        return ThemeMode.light;
+      case settings_provider.ThemeMode.dark:
+        return ThemeMode.dark;
+    }
   }
 }
 
@@ -73,6 +184,21 @@ class _SplashPageState extends State<SplashPage> {
     await Future.delayed(const Duration(seconds: 1));
     
     final userProvider = Provider.of<UserProvider>(context, listen: false);
+    
+    // 检查是否有多个用户
+    final allUsers = await userProvider.getAllUsers();
+    
+    if (allUsers.length > 1) {
+      // 有多个用户，显示用户选择页面
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const UserSwitcherPage()),
+        );
+      }
+      return;
+    }
+    
+    // 只有一个或没有用户，按原逻辑处理
     final isLoggedIn = await userProvider.checkLoginStatus();
     
     if (mounted) {

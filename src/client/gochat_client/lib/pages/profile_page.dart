@@ -4,6 +4,8 @@ import '../providers/user_provider.dart';
 import '../services/api_service.dart';
 import '../models/user.dart';
 import 'login_page.dart';
+import 'settings_page.dart';
+import 'user_switcher_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -194,8 +196,21 @@ class ProfilePage extends StatelessWidget {
             title: const Text('设置'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('设置功能开发中')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
+              );
+            },
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.switch_account_outlined),
+            title: const Text('切换账户'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const UserSwitcherPage()),
               );
             },
           ),

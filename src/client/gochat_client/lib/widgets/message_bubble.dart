@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../models/message.dart';
 import 'package:intl/intl.dart';
 import 'image_preview.dart';
+import '../utils/image_cache_manager.dart';
 
 class MessageBubble extends StatelessWidget {
   final Message message;
@@ -112,23 +112,12 @@ class MessageBubble extends StatelessWidget {
           },
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: CachedNetworkImage(
+            child: OptimizedNetworkImage(
               imageUrl: message.content,
               width: 200,
               height: 200,
               fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                width: 200,
-                height: 200,
-                color: Colors.grey[200],
-                child: const Center(child: CircularProgressIndicator()),
-              ),
-              errorWidget: (context, url, error) => Container(
-                width: 200,
-                height: 200,
-                color: Colors.grey[300],
-                child: const Icon(Icons.broken_image, size: 48),
-              ),
+              enableMemoryCache: true,
             ),
           ),
         );
@@ -212,17 +201,7 @@ class MessageBubble extends StatelessWidget {
   }
 
   String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final difference = now.difference(time);
-
-    if (difference.inDays == 0) {
-      return DateFormat('HH:mm').format(time);
-    } else if (difference.inDays == 1) {
-      return '昨天 ${DateFormat('HH:mm').format(time)}';
-    } else if (difference.inDays < 7) {
-      return DateFormat('E HH:mm', 'zh_CN').format(time);
-    } else {
-      return DateFormat('MM-dd HH:mm').format(time);
-    }
+    // 使用任务要求的格式：yyyy-MM-dd HH:mm:ss
+    return DateFormat('yyyy-MM-dd HH:mm:ss').format(time);
   }
 }

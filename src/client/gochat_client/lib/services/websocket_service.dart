@@ -12,6 +12,10 @@ class WSMessageType {
   static const String system = 'system';
   static const String notification = 'notification';
   static const String error = 'error';
+  static const String friendRequest = 'friend_request';
+  static const String friendRequestAccepted = 'friend_request_accepted';
+  static const String privateMessage = 'private_message';
+  static const String groupMessage = 'group_message';
 }
 
 /// WebSocket连接状态
@@ -123,6 +127,18 @@ class WebSocketService {
         case WSMessageType.error:
           _handleErrorMessage(data);
           break;
+        case WSMessageType.friendRequest:
+          _handleFriendRequestNotification(data);
+          break;
+        case WSMessageType.friendRequestAccepted:
+          _handleFriendRequestAcceptedNotification(data);
+          break;
+        case WSMessageType.privateMessage:
+          _handlePrivateMessageNotification(data);
+          break;
+        case WSMessageType.groupMessage:
+          _handleGroupMessageNotification(data);
+          break;
         default:
           // 将消息发送到流中供外部处理
           _messageController.add(data);
@@ -163,6 +179,30 @@ class WebSocketService {
   void _handleErrorMessage(Map<String, dynamic> data) {
     final errorMsg = data['message'] as String?;
     print('Server error: $errorMsg');
+    _messageController.add(data);
+  }
+
+  /// 处理好友请求通知
+  void _handleFriendRequestNotification(Map<String, dynamic> data) {
+    print('Friend request notification received');
+    _messageController.add(data);
+  }
+
+  /// 处理好友请求被接受通知
+  void _handleFriendRequestAcceptedNotification(Map<String, dynamic> data) {
+    print('Friend request accepted notification received');
+    _messageController.add(data);
+  }
+
+  /// 处理私聊消息通知
+  void _handlePrivateMessageNotification(Map<String, dynamic> data) {
+    print('Private message notification received');
+    _messageController.add(data);
+  }
+
+  /// 处理群聊消息通知
+  void _handleGroupMessageNotification(Map<String, dynamic> data) {
+    print('Group message notification received');
     _messageController.add(data);
   }
 

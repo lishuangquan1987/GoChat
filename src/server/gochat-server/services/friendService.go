@@ -7,6 +7,8 @@ import (
 	"gochat_server/ent/friendrelationship"
 	"gochat_server/ent/friendrequest"
 	"gochat_server/ent/user"
+	"log"
+	"strconv"
 )
 
 // SendFriendRequest 发送好友请求
@@ -51,7 +53,7 @@ func SendFriendRequest(fromUserId, toUserId int, remark string) error {
 	}
 
 	// 创建好友请求
-	_, err = db.FriendRequest.Create().
+	request, err := db.FriendRequest.Create().
 		SetFromUserId(fromUserId).
 		SetToUserId(toUserId).
 		SetRemark(remark).
@@ -61,6 +63,14 @@ func SendFriendRequest(fromUserId, toUserId int, remark string) error {
 	if err != nil {
 		return errors.New("发送好友请求失败")
 	}
+
+	// 发送实时通知给接收者
+	go func() {
+		err := SendFriendRequestNotification(request)
+		if err != nil {
+			log.Printf("Failed to send friend request notification: %v", err)
+		}
+	}()
 
 	return nil
 }
@@ -115,6 +125,17 @@ func AcceptFriendRequest(requestId int) error {
 	// 使好友列表缓存失效
 	_ = InvalidateFriendListCache(request.FromUserId)
 	_ = InvalidateFriendListCache(request.ToUserId)
+
+	// 发送好友请求被接受的通知给发送者
+	go func() {
+		accepter, err := db.User.Get(context.TODO(), request.ToUserId)
+		if err == nil {
+			err = SendFriendRequestAcceptedNotification(strconv.Itoa(request.FromUserId), accepter.Nickname)
+			if err != nil {
+				log.Printf("Failed to send friend request accepted notification: %v", err)
+			}
+		}
+	}()
 
 	return nil
 }
@@ -312,4 +333,36 @@ func GetFriendRequestsWithUsers(userId int) ([]*FriendRequestResponse, error) {
 	}
 
 	return result, nil
+}
+
+// GetUserById 根据ID获取用户信息
+func GetUserById(userId int) (*ent.User, error) {
+	return db.User.Get(context.TODO(), userId)
+}
+
+// SendFriendRequestNotification 发送好友请求通知
+func SendFriendRequestNotification(request *ent.FriendRequest) error {
+	// 获取发送者信息
+	fromUser, err := db.User.Get(context.TODO(), request.FromUserId)
+	if err != nil {
+		return err
+	}
+
+	// 构造通知消息
+	notification := map[string]interface{}{
+		"type": "friend_request",
+		"data": map[string]interface{}{
+			"id":               request.ID,
+			"fromUserId":       request.FromUserId,
+			"fromUserNickname": fromUser.Nickname,
+			"fromUserAvatar":   "", // 暂时为空
+			"remark":           request.Remark,
+			"createTime":       request.CreateTime.Format("2006-01-02T15:04:05Z07:00"),
+		},
+		"message": fromUser.Nickname + " 请求添加您为好友",
+		"time":    request.CreateTime.Unix(),
+	}
+
+	// 发送通知给接收者
+	return SendNotificationToUser(strconv.Itoa(request.ToUserId), notification)
 }

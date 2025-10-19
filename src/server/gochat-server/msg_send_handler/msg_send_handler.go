@@ -23,12 +23,36 @@ func DispatchMessage(msgId string, toUserId int, groupId *int) error {
 	if !isGroup {
 		// 私聊消息 - 推送给接收者
 		if wsmanager.IsUserOnline(strconv.Itoa(toUserId)) {
-			err := wsmanager.SendMessageToUser(strconv.Itoa(toUserId), messageDetail)
+			// 构建正确的消息格式
+			messageToSend := map[string]interface{}{
+				"type": "message",
+				"data": messageDetail,
+			}
+			err := wsmanager.SendMessageToUser(strconv.Itoa(toUserId), messageToSend)
 			if err != nil {
 				log.Printf("Error sending message to user %d: %v", toUserId, err)
 				return err
 			}
 			log.Printf("Message %s dispatched to user %d", msgId, toUserId)
+
+			// 发送消息通知
+			go func() {
+				fromUser, err := services.GetUserById(messageDetail.FromUserId)
+				if err == nil {
+					err = services.SendChatMessageNotification(
+						strconv.Itoa(toUserId),
+						messageDetail.FromUserId,
+						fromUser.Nickname,
+						msgId,
+						messageDetail.Content,
+						false,
+						"",
+					)
+					if err != nil {
+						log.Printf("Failed to send chat message notification: %v", err)
+					}
+				}
+			}()
 		} else {
 			log.Printf("User %d is offline, message %s will be delivered later", toUserId, msgId)
 		}
@@ -41,6 +65,18 @@ func DispatchMessage(msgId string, toUserId int, groupId *int) error {
 		}
 
 		onlineCount := 0
+		groupInfo, _ := services.GetGroupById(*groupId)
+		groupName := ""
+		if groupInfo != nil {
+			groupName = groupInfo.GroupName
+		}
+
+		fromUser, _ := services.GetUserById(messageDetail.FromUserId)
+		fromUserNickname := ""
+		if fromUser != nil {
+			fromUserNickname = fromUser.Nickname
+		}
+
 		for _, member := range members {
 			// 不发送给发送者自己
 			if member.ID == messageDetail.FromUserId {
@@ -48,12 +84,33 @@ func DispatchMessage(msgId string, toUserId int, groupId *int) error {
 			}
 
 			if wsmanager.IsUserOnline(strconv.Itoa(member.ID)) {
-				err := wsmanager.SendMessageToUser(strconv.Itoa(member.ID), messageDetail)
+				// 构建正确的消息格式
+				messageToSend := map[string]interface{}{
+					"type": "message",
+					"data": messageDetail,
+				}
+				err := wsmanager.SendMessageToUser(strconv.Itoa(member.ID), messageToSend)
 				if err != nil {
 					log.Printf("Error sending group message to user %d: %v", member.ID, err)
 				} else {
 					onlineCount++
 				}
+
+				// 发送群消息通知
+				go func(memberId int) {
+					err = services.SendChatMessageNotification(
+						strconv.Itoa(memberId),
+						messageDetail.FromUserId,
+						fromUserNickname,
+						msgId,
+						messageDetail.Content,
+						true,
+						groupName,
+					)
+					if err != nil {
+						log.Printf("Failed to send group message notification: %v", err)
+					}
+				}(member.ID)
 			}
 		}
 		log.Printf("Group message %s dispatched to %d online members", msgId, onlineCount)

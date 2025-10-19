@@ -27,11 +27,16 @@ dependencies:
   # Image & File
   image_picker: ^1.0.7
   cached_network_image: ^3.3.1
+  flutter_cache_manager: ^3.3.1
   file_picker: ^6.1.1
   
   # Utils
   intl: ^0.18.1
   uuid: ^4.3.3
+  
+  # Window Management
+  window_manager: ^0.3.7
+  path_provider: ^2.1.2
 
 dev_dependencies:
   flutter_test:

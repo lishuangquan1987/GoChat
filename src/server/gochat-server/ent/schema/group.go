@@ -5,6 +5,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 // Group holds the schema definition for the Group entity.
@@ -27,4 +28,18 @@ func (Group) Fields() []ent.Field {
 // Edges of the Group.
 func (Group) Edges() []ent.Edge {
 	return nil
+}
+
+// Indexes of the Group.
+func (Group) Indexes() []ent.Index {
+	return []ent.Index{
+		// 群组ID索引（已通过Unique自动创建，这里显式声明以提高可读性）
+		index.Fields("groupId").Unique(),
+		// 群主ID索引，用于查询用户创建的群组
+		index.Fields("ownerId"),
+		// 创建者ID索引，用于查询用户创建的群组
+		index.Fields("createUserId"),
+		// 创建时间索引，用于按时间排序群组
+		index.Fields("createTime"),
+	}
 }

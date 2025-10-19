@@ -113,6 +113,28 @@ var (
 		Name:       "groups",
 		Columns:    GroupsColumns,
 		PrimaryKey: []*schema.Column{GroupsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "group_group_id",
+				Unique:  true,
+				Columns: []*schema.Column{GroupsColumns[1]},
+			},
+			{
+				Name:    "group_owner_id",
+				Unique:  false,
+				Columns: []*schema.Column{GroupsColumns[3]},
+			},
+			{
+				Name:    "group_create_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{GroupsColumns[4]},
+			},
+			{
+				Name:    "group_create_time",
+				Unique:  false,
+				Columns: []*schema.Column{GroupsColumns[5]},
+			},
+		},
 	}
 	// GroupChatRecordsColumns holds the columns for the "group_chat_records" table.
 	GroupChatRecordsColumns = []*schema.Column{

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/friend_provider.dart';
+import '../providers/chat_provider.dart';
 import '../services/api_service.dart';
 import '../models/user.dart';
-import '../models/conversation.dart';
 import '../models/friend_request.dart';
 import 'friend_requests_page.dart';
 import 'chat_page.dart';
@@ -167,23 +167,7 @@ class _FriendListPageState extends State<FriendListPage> {
               title: const Text('发送消息'),
               onTap: () {
                 Navigator.pop(context);
-                // Create a conversation object for the friend
-                final conversation = Conversation(
-                  id: 'private_${friend.id}',
-                  type: ConversationType.private,
-                  user: friend,
-                  lastMessage: null,
-                  unreadCount: 0,
-                  lastTime: DateTime.now(),
-                );
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChatPage(
-                      conversation: conversation,
-                    ),
-                  ),
-                );
+                _startChatWithFriend(friend);
               },
             ),
             ListTile(
@@ -219,6 +203,23 @@ class _FriendListPageState extends State<FriendListPage> {
             child: const Text('删除', style: TextStyle(color: Colors.red)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _startChatWithFriend(User friend) {
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    
+    // Create or get existing conversation
+    final conversation = chatProvider.getOrCreatePrivateConversation(friend);
+    
+    // Navigate to chat page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatPage(
+          conversation: conversation,
+        ),
       ),
     );
   }
@@ -275,29 +276,32 @@ class _FriendListPageState extends State<FriendListPage> {
 
             return ListView(
               children: [
-                // 好友请求入口
-                if (friendProvider.pendingRequestCount > 0)
-                  Container(
-                    color: Colors.white,
-                    child: ListTile(
-                      leading: Stack(
-                        children: [
-                          const CircleAvatar(
-                            backgroundColor: Color(0xFFFF9500),
-                            child: Icon(Icons.person_add, color: Colors.white),
-                          ),
-                          if (friendProvider.pendingRequestCount > 0)
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 18,
+                // 好友请求入口 - 始终显示，有请求时高亮
+                Container(
+                  color: friendProvider.pendingRequestCount > 0 
+                      ? Colors.orange[50] 
+                      : Colors.white,
+                  child: ListTile(
+                    leading: Stack(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: friendProvider.pendingRequestCount > 0 
+                              ? const Color(0xFFFF9500) 
+                              : Colors.grey[400],
+                          child: const Icon(Icons.person_add, color: Colors.white),
+                        ),
+                        if (friendProvider.pendingRequestCount > 0)
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 18,
                                   minHeight: 18,
                                 ),
                                 child: Text(
@@ -313,7 +317,22 @@ class _FriendListPageState extends State<FriendListPage> {
                             ),
                         ],
                       ),
-                      title: const Text('新的好友'),
+                      title: Text(
+                        friendProvider.pendingRequestCount > 0 
+                            ? '新的好友 (${friendProvider.pendingRequestCount})' 
+                            : '新的好友',
+                        style: TextStyle(
+                          fontWeight: friendProvider.pendingRequestCount > 0 
+                              ? FontWeight.w600 
+                              : FontWeight.normal,
+                          color: friendProvider.pendingRequestCount > 0 
+                              ? const Color(0xFFFF9500) 
+                              : null,
+                        ),
+                      ),
+                      subtitle: friendProvider.pendingRequestCount > 0 
+                          ? const Text('有新的好友请求', style: TextStyle(color: Color(0xFFFF9500))) 
+                          : null,
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.push(

@@ -7,6 +7,7 @@ import (
 	"gochat_server/utils"
 	wsmanager "gochat_server/ws_manager"
 	"log"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +34,18 @@ func main() {
 		utils.Warn("Cache功能将不可用")
 	} else {
 		utils.Info("Redka cache initialized successfully")
+		
+		// 预热缓存
+		if err := services.WarmupCache(); err != nil {
+			utils.Warn("Cache warmup failed: %v", err)
+		}
 	}
+
+	// 启动性能监控（每5分钟记录一次）
+	services.StartPerformanceMonitoring(5 * time.Minute)
+
+	// 设置通知发送器，避免循环依赖
+	services.SetNotificationSender(wsmanager.GetWSManager())
 
 	// 确保程序退出时关闭缓存连接
 	defer func() {

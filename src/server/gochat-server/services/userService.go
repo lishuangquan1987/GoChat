@@ -76,8 +76,17 @@ func Login(username, password string) (*LoginResponse, error) {
 
 // GetUserByID 根据ID获取用户信息（带缓存）
 func GetUserByID(userId int) (*ent.User, error) {
-	// 尝试从缓存获取
-	user, err := GetUserByIDWithCache(userId)
+	// 标记用户访问，用于热点数据检测
+	_ = MarkUserAsHot(userId)
+
+	// 首先尝试从热点用户缓存获取
+	user, err := GetHotUserByID(userId)
+	if err == nil {
+		return user, nil
+	}
+
+	// 尝试从普通缓存获取
+	user, err = GetUserByIDWithCache(userId)
 	if err == nil {
 		return user, nil
 	}

@@ -70,4 +70,29 @@ class FriendProvider with ChangeNotifier {
   int get pendingRequestCount {
     return _friendRequests.where((r) => r.isPending).length;
   }
+
+  /// 处理好友请求通知
+  void handleFriendRequestNotification(Map<String, dynamic> data) {
+    final requestData = data['data'] as Map<String, dynamic>?;
+    if (requestData != null) {
+      final request = FriendRequest(
+        id: requestData['id'] as int,
+        fromUserId: requestData['fromUserId'] as int,
+        toUserId: 0, // 当前用户
+        remark: requestData['remark'] as String? ?? '',
+        status: 0, // 待处理
+        createTime: DateTime.now(),
+        fromUserNickname: requestData['fromUserNickname'] as String? ?? '',
+        fromUserAvatar: requestData['fromUserAvatar'] as String? ?? '',
+      );
+      
+      addFriendRequest(request);
+    }
+  }
+
+  /// 处理好友请求被接受通知
+  void handleFriendRequestAcceptedNotification(Map<String, dynamic> data) {
+    // 可以在这里添加一些UI提示逻辑
+    print('Friend request accepted: ${data['message']}');
+  }
 }

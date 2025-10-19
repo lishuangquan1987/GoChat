@@ -110,6 +110,14 @@ func SendMessage(fromUserId, toUserId int, msgType int, content string, groupId 
 
 		// 为接收者创建消息状态记录
 		CreateMessageStatus(msgId, toUserId)
+
+		// 使私聊历史缓存失效
+		_ = InvalidateChatHistoryCache(fromUserId, toUserId)
+	}
+
+	// 如果是群聊，使群聊历史缓存失效
+	if isGroup {
+		_ = InvalidateGroupChatHistoryCache(*groupId)
 	}
 
 	return msgId, nil
@@ -124,6 +132,28 @@ func GetChatHistory(userId, friendId int, page, pageSize int) ([]map[string]inte
 	}
 	if !isFriend {
 		return nil, 0, errors.New("不是好友关系")
+	}
+
+	// 尝试从缓存获取
+	if cachedMessages, found := GetCachedChatHistory(userId, friendId, page); found {
+		// 从缓存获取总数（简化处理，实际应该单独缓存总数）
+		total, _ := db.ChatRecord.Query().
+			Where(
+				chatrecord.Or(
+					chatrecord.And(
+						chatrecord.FromUserId(userId),
+						chatrecord.ToUserId(friendId),
+						chatrecord.IsGroup(false),
+					),
+					chatrecord.And(
+						chatrecord.FromUserId(friendId),
+						chatrecord.ToUserId(userId),
+						chatrecord.IsGroup(false),
+					),
+				),
+			).
+			Count(context.TODO())
+		return cachedMessages, total, nil
 	}
 
 	// 计算偏移量
@@ -196,11 +226,28 @@ func GetChatHistory(userId, friendId int, page, pageSize int) ([]map[string]inte
 		messages = append(messages, message)
 	}
 
+	// 缓存查询结果
+	_ = CacheChatHistory(userId, friendId, page, messages)
+
 	return messages, total, nil
 }
 
 // GetGroupChatHistory 获取群聊历史记录
 func GetGroupChatHistory(groupId, page, pageSize int) ([]map[string]interface{}, int, error) {
+	// 尝试从缓存获取
+	if cachedMessages, found := GetCachedGroupChatHistory(groupId, page); found {
+		// 从缓存获取总数（简化处理）
+		allRecords, _ := db.GroupChatRecord.Query().All(context.TODO())
+		groupIdStr := fmt.Sprintf("%d", groupId)
+		total := 0
+		for _, record := range allRecords {
+			if record.GroupId == groupIdStr {
+				total++
+			}
+		}
+		return cachedMessages, total, nil
+	}
+
 	// 查询所有群聊记录，然后在代码中过滤
 	allRecords, err := db.GroupChatRecord.Query().
 		Order(ent.Desc("create_time")).
@@ -260,6 +307,9 @@ func GetGroupChatHistory(groupId, page, pageSize int) ([]map[string]interface{},
 
 		messages = append(messages, message)
 	}
+
+	// 缓存查询结果
+	_ = CacheGroupChatHistory(groupId, page, messages)
 
 	return messages, total, nil
 }
@@ -422,36 +472,75 @@ type MessageDetail struct {
 
 // GetMessageDetail 获取消息详情
 func GetMessageDetail(msgId string) (*MessageDetail, error) {
-	// 查询聊天记录
+	// 先尝试查询私聊记录
 	record, err := db.ChatRecord.Query().
 		Where(chatrecord.MsgId(msgId)).
 		First(context.TODO())
 
+	if err == nil {
+		// 获取消息内容
+		content, err := getMessageContent(record.MsgId, record.MsgType)
+		if err != nil {
+			return nil, err
+		}
+
+		detail := &MessageDetail{
+			MsgId:      record.MsgId,
+			FromUserId: record.FromUserId,
+			ToUserId:   record.ToUserId,
+			MsgType:    record.MsgType,
+			Content:    content,
+			IsGroup:    record.IsGroup,
+			CreateTime: record.CreateTime,
+		}
+
+		if record.IsGroup {
+			detail.GroupId = &record.GroupId
+		}
+
+		return detail, nil
+	}
+
+	// 如果私聊记录中没有找到，尝试查询群聊记录
+	groupRecords, err := db.GroupChatRecord.Query().All(context.TODO())
 	if err != nil {
-		return nil, errors.New("消息不存在")
+		return nil, errors.New("查询群聊记录失败")
 	}
 
-	// 获取消息内容
-	content, err := getMessageContent(record.MsgId, record.MsgType)
-	if err != nil {
-		return nil, err
+	for _, groupRecord := range groupRecords {
+		if groupRecord.MsgId == msgId {
+			// 解析 fromUserId 和 msgType
+			fromUserId := 0
+			fmt.Sscanf(groupRecord.FromUserId, "%d", &fromUserId)
+			
+			msgType := 0
+			fmt.Sscanf(groupRecord.MsgType, "%d", &msgType)
+
+			groupId := 0
+			fmt.Sscanf(groupRecord.GroupId, "%d", &groupId)
+
+			// 获取消息内容
+			content, err := getMessageContent(groupRecord.MsgId, msgType)
+			if err != nil {
+				return nil, err
+			}
+
+			detail := &MessageDetail{
+				MsgId:      groupRecord.MsgId,
+				FromUserId: fromUserId,
+				ToUserId:   0, // 群聊消息没有特定的接收者
+				MsgType:    msgType,
+				Content:    content,
+				IsGroup:    true,
+				GroupId:    &groupId,
+				CreateTime: groupRecord.CreateTime,
+			}
+
+			return detail, nil
+		}
 	}
 
-	detail := &MessageDetail{
-		MsgId:      record.MsgId,
-		FromUserId: record.FromUserId,
-		ToUserId:   record.ToUserId,
-		MsgType:    record.MsgType,
-		Content:    content,
-		IsGroup:    record.IsGroup,
-		CreateTime: record.CreateTime,
-	}
-
-	if record.IsGroup {
-		detail.GroupId = &record.GroupId
-	}
-
-	return detail, nil
+	return nil, errors.New("消息不存在")
 }
 
 // GetConversationList 获取会话列表

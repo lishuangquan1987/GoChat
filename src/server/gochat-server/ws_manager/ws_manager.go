@@ -2,8 +2,12 @@ package wsmanager
 
 import (
 	authmanager "gochat_server/auth_manager"
+	"gochat_server/services"
+	"gochat_server/utils"
+	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -65,6 +69,13 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request) {
 	//将连接添加到连接池中
 	addConnection(userId, conn)
 
+	// 将用户标记为在线（缓存）
+	if userIdInt, err := strconv.Atoi(userId); err == nil {
+		if err := services.CacheOnlineUser(userIdInt); err != nil {
+			utils.Warn("Failed to cache online user %s: %v", userId, err)
+		}
+	}
+
 	log.Printf("User %s connected", userId)
 
 	// 发送欢迎消息
@@ -96,6 +107,14 @@ func handleMessages(userId string, conn *websocket.Conn) {
 		delete(dic, userId)
 		mu.Unlock()
 		conn.Close()
+		
+		// 从在线用户缓存中移除
+		if userIdInt, err := strconv.Atoi(userId); err == nil {
+			if err := services.RemoveOnlineUser(userIdInt); err != nil {
+				utils.Warn("Failed to remove online user %s: %v", userId, err)
+			}
+		}
+		
 		log.Printf("User %s disconnected", userId)
 	}()
 
@@ -118,6 +137,9 @@ func handleMessages(userId string, conn *websocket.Conn) {
 			
 			// 这里可以处理心跳、确认等简单消息
 			// 实际的聊天消息发送应该通过 /api/messages/send 接口
+			
+			// 处理消息状态更新（delivered, read等）
+			handleIncomingMessage(userId, message, conn)
 		} else if messageType == websocket.PingMessage {
 			// 响应Ping消息
 			if err := conn.WriteMessage(websocket.PongMessage, nil); err != nil {
@@ -173,6 +195,24 @@ func BroadcastMessage(message interface{}) {
 	}
 }
 
+// WSManager 实现 NotificationSender 接口
+type WSManager struct{}
+
+// IsUserOnline 实现接口方法
+func (w *WSManager) IsUserOnline(userId string) bool {
+	return IsUserOnline(userId)
+}
+
+// SendMessageToUser 实现接口方法
+func (w *WSManager) SendMessageToUser(userId string, message interface{}) error {
+	return SendMessageToUser(userId, message)
+}
+
+// GetWSManager 获取 WSManager 实例
+func GetWSManager() *WSManager {
+	return &WSManager{}
+}
+
 // pushOfflineMessages 推送离线消息
 func pushOfflineMessages(userId string, conn *websocket.Conn) {
 	// 为了避免循环依赖，离线消息推送通过HTTP API获取
@@ -191,4 +231,138 @@ func pushOfflineMessages(userId string, conn *websocket.Conn) {
 	}
 	
 	log.Printf("Offline message notification sent to user %s", userId)
+}
+
+// handleIncomingMessage 处理接收到的WebSocket消息
+func handleIncomingMessage(userId string, messageData []byte, conn *websocket.Conn) {
+	var wsMsg map[string]interface{}
+	err := json.Unmarshal(messageData, &wsMsg)
+	if err != nil {
+		log.Printf("Error unmarshaling message from user %s: %v", userId, err)
+		return
+	}
+
+	msgType, ok := wsMsg["type"].(string)
+	if !ok {
+		log.Printf("Invalid message type from user %s", userId)
+		return
+	}
+
+	log.Printf("Received message type '%s' from user %s", msgType, userId)
+
+	switch msgType {
+	case "heartbeat":
+		handleHeartbeat(userId, conn)
+	case "delivered":
+		handleDelivered(userId, wsMsg, conn)
+	case "read":
+		handleRead(userId, wsMsg, conn)
+	default:
+		log.Printf("Unknown message type: %s", msgType)
+	}
+}
+
+// handleHeartbeat 处理心跳消息
+func handleHeartbeat(userId string, conn *websocket.Conn) {
+	log.Printf("Heartbeat from user %s", userId)
+	// 发送心跳响应
+	response := map[string]interface{}{
+		"type": "heartbeat",
+		"time": time.Now().Unix(),
+	}
+	conn.WriteJSON(response)
+}
+
+// handleDelivered 处理消息送达确认
+func handleDelivered(userId string, wsMsg map[string]interface{}, conn *websocket.Conn) {
+	data, ok := wsMsg["data"].(map[string]interface{})
+	if !ok {
+		log.Printf("Invalid data in delivered message from user %s", userId)
+		return
+	}
+
+	msgId, ok := data["msgId"].(string)
+	if !ok {
+		log.Printf("Invalid msgId in delivered confirmation from user %s", userId)
+		return
+	}
+
+	userIdInt, err := strconv.Atoi(userId)
+	if err != nil {
+		log.Printf("Invalid userId: %s", userId)
+		return
+	}
+
+	log.Printf("User %s received message %s (delivered)", userId, msgId)
+
+	// 标记消息为已送达
+	err = services.MarkMessageAsDelivered(msgId, userIdInt)
+	if err != nil {
+		log.Printf("Error marking message as delivered: %v", err)
+		return
+	}
+
+	// 通知发送者消息已送达
+	notifyMessageStatus(msgId, userIdInt, "delivered")
+}
+
+// handleRead 处理消息已读确认
+func handleRead(userId string, wsMsg map[string]interface{}, conn *websocket.Conn) {
+	data, ok := wsMsg["data"].(map[string]interface{})
+	if !ok {
+		log.Printf("Invalid data in read message from user %s", userId)
+		return
+	}
+
+	msgId, ok := data["msgId"].(string)
+	if !ok {
+		log.Printf("Invalid msgId in read confirmation from user %s", userId)
+		return
+	}
+
+	userIdInt, err := strconv.Atoi(userId)
+	if err != nil {
+		log.Printf("Invalid userId: %s", userId)
+		return
+	}
+
+	log.Printf("User %s read message %s", userId, msgId)
+
+	// 标记消息为已读
+	err = services.MarkMessageAsRead(msgId, userIdInt)
+	if err != nil {
+		log.Printf("Error marking message as read: %v", err)
+		return
+	}
+
+	// 通知发送者消息已读
+	notifyMessageStatus(msgId, userIdInt, "read")
+}
+
+// notifyMessageStatus 通知消息状态更新
+func notifyMessageStatus(msgId string, userId int, status string) {
+	// 获取消息详情以找到发送者
+	messageDetail, err := services.GetMessageDetail(msgId)
+	if err != nil {
+		log.Printf("Error getting message detail for status notification: %v", err)
+		return
+	}
+
+	// 构建状态更新消息
+	statusMsg := map[string]interface{}{
+		"type":   "message_status",
+		"msgId":  msgId,
+		"userId": userId,
+		"status": status,
+	}
+
+	// 发送给消息发送者
+	if IsUserOnline(strconv.Itoa(messageDetail.FromUserId)) {
+		err := SendMessageToUser(strconv.Itoa(messageDetail.FromUserId), statusMsg)
+		if err != nil {
+			log.Printf("Error sending status update to user %d: %v", messageDetail.FromUserId, err)
+		} else {
+			log.Printf("Status update sent: message %s is %s by user %d", msgId, status, userId)
+		}
+	}
 }

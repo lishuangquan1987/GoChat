@@ -2,10 +2,10 @@
     "DBType": "postgres",
     "ConnectionString": "host=localhost port=5432 user=postgres dbname=gochat password=123456 sslmode=disable",
     "DBPool": {
-        "MaxOpenConns": 25,
-        "MaxIdleConns": 10,
-        "ConnMaxLifetime": 300,
-        "ConnMaxIdleTime": 60
+        "MaxOpenConns": 50,
+        "MaxIdleConns": 25,
+        "ConnMaxLifetime": 600,
+        "ConnMaxIdleTime": 300
     },
     "MinIO": {
         "Endpoint": "localhost:9000",
@@ -20,6 +20,8 @@
     "Redka": {
         "Enabled": true,
         "Path": "./redka.db",
-        "CacheTTL": 300
+        "CacheTTL": 600,
+        "HotDataTTL": 1800,
+        "MaxMemory": "256MB"
     }
 }

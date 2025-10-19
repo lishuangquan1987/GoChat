@@ -53,11 +53,22 @@ func CreateGroup(groupName string, ownerId int, memberIds []int) (*ent.Group, er
 		return nil, errors.New("创建群组失败")
 	}
 
+	// 使所有成员的用户群组缓存失效
+	for _, memberId := range memberIds {
+		_ = InvalidateUserGroupsCache(memberId)
+	}
+
 	return newGroup, nil
 }
 
-// GetUserGroups 获取用户所属的群组列表
+// GetUserGroups 获取用户所属的群组列表（带缓存）
 func GetUserGroups(userId int) ([]*ent.Group, error) {
+	// 尝试从缓存获取
+	groups, found := GetCachedUserGroups(userId)
+	if found {
+		return groups, nil
+	}
+
 	// 查询所有群组
 	allGroups, err := db.Group.Query().All(context.TODO())
 	if err != nil {
@@ -74,6 +85,9 @@ func GetUserGroups(userId int) ([]*ent.Group, error) {
 			}
 		}
 	}
+
+	// 写入缓存
+	_ = CacheUserGroups(userId, userGroups)
 
 	return userGroups, nil
 }
@@ -140,6 +154,11 @@ func AddGroupMembers(groupId int, userIds []int) error {
 
 	// 使群成员缓存失效
 	_ = InvalidateGroupMembersCache(groupId)
+	
+	// 使新成员的用户群组缓存失效
+	for _, userId := range userIds {
+		_ = InvalidateUserGroupsCache(userId)
+	}
 
 	return nil
 }
@@ -183,6 +202,9 @@ func RemoveGroupMember(groupId, userId int) error {
 
 	// 使群成员缓存失效
 	_ = InvalidateGroupMembersCache(groupId)
+	
+	// 使被移除用户的用户群组缓存失效
+	_ = InvalidateUserGroupsCache(userId)
 
 	return nil
 }
@@ -287,4 +309,8 @@ func DeleteGroup(groupId int) error {
 	}
 
 	return nil
+}
+// GetGroupById 根据ID获取群组信息（别名）
+func GetGroupById(groupId int) (*ent.Group, error) {
+	return GetGroupByID(groupId)
 }
