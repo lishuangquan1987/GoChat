@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart' as settings;
 import '../services/notification_service.dart';
+import '../pages/do_not_disturb_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -128,6 +129,19 @@ class _SettingsPageState extends State<SettingsPage> {
                 value: settingsProvider.lastSeenEnabled,
                 onChanged: settingsProvider.setLastSeenEnabled,
               ),
+              _buildNavigationTile(
+                title: '免打扰设置',
+                subtitle: '管理消息通知免打扰',
+                icon: Icons.notifications_off,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DoNotDisturbPage(),
+                    ),
+                  );
+                },
+              ),
               
               const Divider(height: 32),
               
@@ -177,6 +191,27 @@ class _SettingsPageState extends State<SettingsPage> {
         onChanged: onChanged,
         activeColor: const Color(0xFF07C160),
       ),
+    );
+  }
+
+  Widget _buildNavigationTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: const Color(0xFF07C160)),
+      title: Text(title),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.grey[600],
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
     );
   }
 

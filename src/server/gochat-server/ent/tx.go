@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// ChatRecord is the client for interacting with the ChatRecord builders.
 	ChatRecord *ChatRecordClient
+	// DoNotDisturb is the client for interacting with the DoNotDisturb builders.
+	DoNotDisturb *DoNotDisturbClient
 	// FriendRelationship is the client for interacting with the FriendRelationship builders.
 	FriendRelationship *FriendRelationshipClient
 	// FriendRequest is the client for interacting with the FriendRequest builders.
@@ -166,6 +168,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.ChatRecord = NewChatRecordClient(tx.config)
+	tx.DoNotDisturb = NewDoNotDisturbClient(tx.config)
 	tx.FriendRelationship = NewFriendRelationshipClient(tx.config)
 	tx.FriendRequest = NewFriendRequestClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)

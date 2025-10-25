@@ -81,5 +81,19 @@ func RegisterRoutes(r *gin.Engine) {
 			performance.POST("/cache/warmup", controllers.WarmupCache)
 			performance.GET("/cache/stats", controllers.GetCacheStats)
 		}
+
+		// 免打扰相关路由（需要认证）
+		dnd := api.Group("/donotdisturb")
+		dnd.Use(middlewares.AuthMiddleware())
+		{
+			dnd.POST("/private", controllers.SetPrivateDoNotDisturb)
+			dnd.POST("/group", controllers.SetGroupDoNotDisturb)
+			dnd.POST("/global", controllers.SetGlobalDoNotDisturb)
+			dnd.DELETE("/private/:targetUserId", controllers.RemovePrivateDoNotDisturb)
+			dnd.DELETE("/group/:targetGroupId", controllers.RemoveGroupDoNotDisturb)
+			dnd.DELETE("/global", controllers.RemoveGlobalDoNotDisturb)
+			dnd.GET("/settings", controllers.GetDoNotDisturbSettings)
+			dnd.GET("/status", controllers.CheckDoNotDisturbStatus)
+		}
 	}
 }

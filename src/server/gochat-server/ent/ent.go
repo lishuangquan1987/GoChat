@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"gochat_server/ent/chatrecord"
+	"gochat_server/ent/donotdisturb"
 	"gochat_server/ent/friendrelationship"
 	"gochat_server/ent/friendrequest"
 	"gochat_server/ent/group"
@@ -84,6 +85,7 @@ func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			chatrecord.Table:         chatrecord.ValidColumn,
+			donotdisturb.Table:       donotdisturb.ValidColumn,
 			friendrelationship.Table: friendrelationship.ValidColumn,
 			friendrequest.Table:      friendrequest.ValidColumn,
 			group.Table:              group.ValidColumn,

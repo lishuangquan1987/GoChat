@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"gochat_server/ent/chatrecord"
+	"gochat_server/ent/donotdisturb"
 	"gochat_server/ent/friendrelationship"
 	"gochat_server/ent/friendrequest"
 	"gochat_server/ent/group"
@@ -35,6 +36,7 @@ const (
 
 	// Node types.
 	TypeChatRecord         = "ChatRecord"
+	TypeDoNotDisturb       = "DoNotDisturb"
 	TypeFriendRelationship = "FriendRelationship"
 	TypeFriendRequest      = "FriendRequest"
 	TypeGroup              = "Group"
@@ -853,6 +855,899 @@ func (m *ChatRecordMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ChatRecordMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown ChatRecord edge %s", name)
+}
+
+// DoNotDisturbMutation represents an operation that mutates the DoNotDisturb nodes in the graph.
+type DoNotDisturbMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *int
+	user_id            *int
+	adduser_id         *int
+	target_user_id     *int
+	addtarget_user_id  *int
+	target_group_id    *int
+	addtarget_group_id *int
+	is_global          *bool
+	start_time         *time.Time
+	end_time           *time.Time
+	created_at         *time.Time
+	updated_at         *time.Time
+	clearedFields      map[string]struct{}
+	done               bool
+	oldValue           func(context.Context) (*DoNotDisturb, error)
+	predicates         []predicate.DoNotDisturb
+}
+
+var _ ent.Mutation = (*DoNotDisturbMutation)(nil)
+
+// donotdisturbOption allows management of the mutation configuration using functional options.
+type donotdisturbOption func(*DoNotDisturbMutation)
+
+// newDoNotDisturbMutation creates new mutation for the DoNotDisturb entity.
+func newDoNotDisturbMutation(c config, op Op, opts ...donotdisturbOption) *DoNotDisturbMutation {
+	m := &DoNotDisturbMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDoNotDisturb,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDoNotDisturbID sets the ID field of the mutation.
+func withDoNotDisturbID(id int) donotdisturbOption {
+	return func(m *DoNotDisturbMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *DoNotDisturb
+		)
+		m.oldValue = func(ctx context.Context) (*DoNotDisturb, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().DoNotDisturb.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDoNotDisturb sets the old DoNotDisturb of the mutation.
+func withDoNotDisturb(node *DoNotDisturb) donotdisturbOption {
+	return func(m *DoNotDisturbMutation) {
+		m.oldValue = func(context.Context) (*DoNotDisturb, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DoNotDisturbMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DoNotDisturbMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of DoNotDisturb entities.
+func (m *DoNotDisturbMutation) SetID(id int) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DoNotDisturbMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DoNotDisturbMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().DoNotDisturb.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *DoNotDisturbMutation) SetUserID(i int) {
+	m.user_id = &i
+	m.adduser_id = nil
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *DoNotDisturbMutation) UserID() (r int, exists bool) {
+	v := m.user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the DoNotDisturb entity.
+// If the DoNotDisturb object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DoNotDisturbMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// AddUserID adds i to the "user_id" field.
+func (m *DoNotDisturbMutation) AddUserID(i int) {
+	if m.adduser_id != nil {
+		*m.adduser_id += i
+	} else {
+		m.adduser_id = &i
+	}
+}
+
+// AddedUserID returns the value that was added to the "user_id" field in this mutation.
+func (m *DoNotDisturbMutation) AddedUserID() (r int, exists bool) {
+	v := m.adduser_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *DoNotDisturbMutation) ResetUserID() {
+	m.user_id = nil
+	m.adduser_id = nil
+}
+
+// SetTargetUserID sets the "target_user_id" field.
+func (m *DoNotDisturbMutation) SetTargetUserID(i int) {
+	m.target_user_id = &i
+	m.addtarget_user_id = nil
+}
+
+// TargetUserID returns the value of the "target_user_id" field in the mutation.
+func (m *DoNotDisturbMutation) TargetUserID() (r int, exists bool) {
+	v := m.target_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTargetUserID returns the old "target_user_id" field's value of the DoNotDisturb entity.
+// If the DoNotDisturb object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DoNotDisturbMutation) OldTargetUserID(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTargetUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTargetUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTargetUserID: %w", err)
+	}
+	return oldValue.TargetUserID, nil
+}
+
+// AddTargetUserID adds i to the "target_user_id" field.
+func (m *DoNotDisturbMutation) AddTargetUserID(i int) {
+	if m.addtarget_user_id != nil {
+		*m.addtarget_user_id += i
+	} else {
+		m.addtarget_user_id = &i
+	}
+}
+
+// AddedTargetUserID returns the value that was added to the "target_user_id" field in this mutation.
+func (m *DoNotDisturbMutation) AddedTargetUserID() (r int, exists bool) {
+	v := m.addtarget_user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearTargetUserID clears the value of the "target_user_id" field.
+func (m *DoNotDisturbMutation) ClearTargetUserID() {
+	m.target_user_id = nil
+	m.addtarget_user_id = nil
+	m.clearedFields[donotdisturb.FieldTargetUserID] = struct{}{}
+}
+
+// TargetUserIDCleared returns if the "target_user_id" field was cleared in this mutation.
+func (m *DoNotDisturbMutation) TargetUserIDCleared() bool {
+	_, ok := m.clearedFields[donotdisturb.FieldTargetUserID]
+	return ok
+}
+
+// ResetTargetUserID resets all changes to the "target_user_id" field.
+func (m *DoNotDisturbMutation) ResetTargetUserID() {
+	m.target_user_id = nil
+	m.addtarget_user_id = nil
+	delete(m.clearedFields, donotdisturb.FieldTargetUserID)
+}
+
+// SetTargetGroupID sets the "target_group_id" field.
+func (m *DoNotDisturbMutation) SetTargetGroupID(i int) {
+	m.target_group_id = &i
+	m.addtarget_group_id = nil
+}
+
+// TargetGroupID returns the value of the "target_group_id" field in the mutation.
+func (m *DoNotDisturbMutation) TargetGroupID() (r int, exists bool) {
+	v := m.target_group_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTargetGroupID returns the old "target_group_id" field's value of the DoNotDisturb entity.
+// If the DoNotDisturb object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DoNotDisturbMutation) OldTargetGroupID(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTargetGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTargetGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTargetGroupID: %w", err)
+	}
+	return oldValue.TargetGroupID, nil
+}
+
+// AddTargetGroupID adds i to the "target_group_id" field.
+func (m *DoNotDisturbMutation) AddTargetGroupID(i int) {
+	if m.addtarget_group_id != nil {
+		*m.addtarget_group_id += i
+	} else {
+		m.addtarget_group_id = &i
+	}
+}
+
+// AddedTargetGroupID returns the value that was added to the "target_group_id" field in this mutation.
+func (m *DoNotDisturbMutation) AddedTargetGroupID() (r int, exists bool) {
+	v := m.addtarget_group_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearTargetGroupID clears the value of the "target_group_id" field.
+func (m *DoNotDisturbMutation) ClearTargetGroupID() {
+	m.target_group_id = nil
+	m.addtarget_group_id = nil
+	m.clearedFields[donotdisturb.FieldTargetGroupID] = struct{}{}
+}
+
+// TargetGroupIDCleared returns if the "target_group_id" field was cleared in this mutation.
+func (m *DoNotDisturbMutation) TargetGroupIDCleared() bool {
+	_, ok := m.clearedFields[donotdisturb.FieldTargetGroupID]
+	return ok
+}
+
+// ResetTargetGroupID resets all changes to the "target_group_id" field.
+func (m *DoNotDisturbMutation) ResetTargetGroupID() {
+	m.target_group_id = nil
+	m.addtarget_group_id = nil
+	delete(m.clearedFields, donotdisturb.FieldTargetGroupID)
+}
+
+// SetIsGlobal sets the "is_global" field.
+func (m *DoNotDisturbMutation) SetIsGlobal(b bool) {
+	m.is_global = &b
+}
+
+// IsGlobal returns the value of the "is_global" field in the mutation.
+func (m *DoNotDisturbMutation) IsGlobal() (r bool, exists bool) {
+	v := m.is_global
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsGlobal returns the old "is_global" field's value of the DoNotDisturb entity.
+// If the DoNotDisturb object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DoNotDisturbMutation) OldIsGlobal(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsGlobal is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsGlobal requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsGlobal: %w", err)
+	}
+	return oldValue.IsGlobal, nil
+}
+
+// ResetIsGlobal resets all changes to the "is_global" field.
+func (m *DoNotDisturbMutation) ResetIsGlobal() {
+	m.is_global = nil
+}
+
+// SetStartTime sets the "start_time" field.
+func (m *DoNotDisturbMutation) SetStartTime(t time.Time) {
+	m.start_time = &t
+}
+
+// StartTime returns the value of the "start_time" field in the mutation.
+func (m *DoNotDisturbMutation) StartTime() (r time.Time, exists bool) {
+	v := m.start_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStartTime returns the old "start_time" field's value of the DoNotDisturb entity.
+// If the DoNotDisturb object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DoNotDisturbMutation) OldStartTime(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStartTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStartTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStartTime: %w", err)
+	}
+	return oldValue.StartTime, nil
+}
+
+// ClearStartTime clears the value of the "start_time" field.
+func (m *DoNotDisturbMutation) ClearStartTime() {
+	m.start_time = nil
+	m.clearedFields[donotdisturb.FieldStartTime] = struct{}{}
+}
+
+// StartTimeCleared returns if the "start_time" field was cleared in this mutation.
+func (m *DoNotDisturbMutation) StartTimeCleared() bool {
+	_, ok := m.clearedFields[donotdisturb.FieldStartTime]
+	return ok
+}
+
+// ResetStartTime resets all changes to the "start_time" field.
+func (m *DoNotDisturbMutation) ResetStartTime() {
+	m.start_time = nil
+	delete(m.clearedFields, donotdisturb.FieldStartTime)
+}
+
+// SetEndTime sets the "end_time" field.
+func (m *DoNotDisturbMutation) SetEndTime(t time.Time) {
+	m.end_time = &t
+}
+
+// EndTime returns the value of the "end_time" field in the mutation.
+func (m *DoNotDisturbMutation) EndTime() (r time.Time, exists bool) {
+	v := m.end_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEndTime returns the old "end_time" field's value of the DoNotDisturb entity.
+// If the DoNotDisturb object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DoNotDisturbMutation) OldEndTime(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEndTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEndTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEndTime: %w", err)
+	}
+	return oldValue.EndTime, nil
+}
+
+// ClearEndTime clears the value of the "end_time" field.
+func (m *DoNotDisturbMutation) ClearEndTime() {
+	m.end_time = nil
+	m.clearedFields[donotdisturb.FieldEndTime] = struct{}{}
+}
+
+// EndTimeCleared returns if the "end_time" field was cleared in this mutation.
+func (m *DoNotDisturbMutation) EndTimeCleared() bool {
+	_, ok := m.clearedFields[donotdisturb.FieldEndTime]
+	return ok
+}
+
+// ResetEndTime resets all changes to the "end_time" field.
+func (m *DoNotDisturbMutation) ResetEndTime() {
+	m.end_time = nil
+	delete(m.clearedFields, donotdisturb.FieldEndTime)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *DoNotDisturbMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *DoNotDisturbMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the DoNotDisturb entity.
+// If the DoNotDisturb object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DoNotDisturbMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *DoNotDisturbMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *DoNotDisturbMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *DoNotDisturbMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the DoNotDisturb entity.
+// If the DoNotDisturb object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DoNotDisturbMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *DoNotDisturbMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// Where appends a list predicates to the DoNotDisturbMutation builder.
+func (m *DoNotDisturbMutation) Where(ps ...predicate.DoNotDisturb) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DoNotDisturbMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DoNotDisturbMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.DoNotDisturb, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DoNotDisturbMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DoNotDisturbMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (DoNotDisturb).
+func (m *DoNotDisturbMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DoNotDisturbMutation) Fields() []string {
+	fields := make([]string, 0, 8)
+	if m.user_id != nil {
+		fields = append(fields, donotdisturb.FieldUserID)
+	}
+	if m.target_user_id != nil {
+		fields = append(fields, donotdisturb.FieldTargetUserID)
+	}
+	if m.target_group_id != nil {
+		fields = append(fields, donotdisturb.FieldTargetGroupID)
+	}
+	if m.is_global != nil {
+		fields = append(fields, donotdisturb.FieldIsGlobal)
+	}
+	if m.start_time != nil {
+		fields = append(fields, donotdisturb.FieldStartTime)
+	}
+	if m.end_time != nil {
+		fields = append(fields, donotdisturb.FieldEndTime)
+	}
+	if m.created_at != nil {
+		fields = append(fields, donotdisturb.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, donotdisturb.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DoNotDisturbMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case donotdisturb.FieldUserID:
+		return m.UserID()
+	case donotdisturb.FieldTargetUserID:
+		return m.TargetUserID()
+	case donotdisturb.FieldTargetGroupID:
+		return m.TargetGroupID()
+	case donotdisturb.FieldIsGlobal:
+		return m.IsGlobal()
+	case donotdisturb.FieldStartTime:
+		return m.StartTime()
+	case donotdisturb.FieldEndTime:
+		return m.EndTime()
+	case donotdisturb.FieldCreatedAt:
+		return m.CreatedAt()
+	case donotdisturb.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DoNotDisturbMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case donotdisturb.FieldUserID:
+		return m.OldUserID(ctx)
+	case donotdisturb.FieldTargetUserID:
+		return m.OldTargetUserID(ctx)
+	case donotdisturb.FieldTargetGroupID:
+		return m.OldTargetGroupID(ctx)
+	case donotdisturb.FieldIsGlobal:
+		return m.OldIsGlobal(ctx)
+	case donotdisturb.FieldStartTime:
+		return m.OldStartTime(ctx)
+	case donotdisturb.FieldEndTime:
+		return m.OldEndTime(ctx)
+	case donotdisturb.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case donotdisturb.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown DoNotDisturb field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DoNotDisturbMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case donotdisturb.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case donotdisturb.FieldTargetUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTargetUserID(v)
+		return nil
+	case donotdisturb.FieldTargetGroupID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTargetGroupID(v)
+		return nil
+	case donotdisturb.FieldIsGlobal:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsGlobal(v)
+		return nil
+	case donotdisturb.FieldStartTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStartTime(v)
+		return nil
+	case donotdisturb.FieldEndTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEndTime(v)
+		return nil
+	case donotdisturb.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case donotdisturb.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DoNotDisturb field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DoNotDisturbMutation) AddedFields() []string {
+	var fields []string
+	if m.adduser_id != nil {
+		fields = append(fields, donotdisturb.FieldUserID)
+	}
+	if m.addtarget_user_id != nil {
+		fields = append(fields, donotdisturb.FieldTargetUserID)
+	}
+	if m.addtarget_group_id != nil {
+		fields = append(fields, donotdisturb.FieldTargetGroupID)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DoNotDisturbMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case donotdisturb.FieldUserID:
+		return m.AddedUserID()
+	case donotdisturb.FieldTargetUserID:
+		return m.AddedTargetUserID()
+	case donotdisturb.FieldTargetGroupID:
+		return m.AddedTargetGroupID()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DoNotDisturbMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case donotdisturb.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUserID(v)
+		return nil
+	case donotdisturb.FieldTargetUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTargetUserID(v)
+		return nil
+	case donotdisturb.FieldTargetGroupID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTargetGroupID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DoNotDisturb numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DoNotDisturbMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(donotdisturb.FieldTargetUserID) {
+		fields = append(fields, donotdisturb.FieldTargetUserID)
+	}
+	if m.FieldCleared(donotdisturb.FieldTargetGroupID) {
+		fields = append(fields, donotdisturb.FieldTargetGroupID)
+	}
+	if m.FieldCleared(donotdisturb.FieldStartTime) {
+		fields = append(fields, donotdisturb.FieldStartTime)
+	}
+	if m.FieldCleared(donotdisturb.FieldEndTime) {
+		fields = append(fields, donotdisturb.FieldEndTime)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DoNotDisturbMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DoNotDisturbMutation) ClearField(name string) error {
+	switch name {
+	case donotdisturb.FieldTargetUserID:
+		m.ClearTargetUserID()
+		return nil
+	case donotdisturb.FieldTargetGroupID:
+		m.ClearTargetGroupID()
+		return nil
+	case donotdisturb.FieldStartTime:
+		m.ClearStartTime()
+		return nil
+	case donotdisturb.FieldEndTime:
+		m.ClearEndTime()
+		return nil
+	}
+	return fmt.Errorf("unknown DoNotDisturb nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DoNotDisturbMutation) ResetField(name string) error {
+	switch name {
+	case donotdisturb.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case donotdisturb.FieldTargetUserID:
+		m.ResetTargetUserID()
+		return nil
+	case donotdisturb.FieldTargetGroupID:
+		m.ResetTargetGroupID()
+		return nil
+	case donotdisturb.FieldIsGlobal:
+		m.ResetIsGlobal()
+		return nil
+	case donotdisturb.FieldStartTime:
+		m.ResetStartTime()
+		return nil
+	case donotdisturb.FieldEndTime:
+		m.ResetEndTime()
+		return nil
+	case donotdisturb.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case donotdisturb.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown DoNotDisturb field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DoNotDisturbMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DoNotDisturbMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DoNotDisturbMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DoNotDisturbMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DoNotDisturbMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DoNotDisturbMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DoNotDisturbMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown DoNotDisturb unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DoNotDisturbMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown DoNotDisturb edge %s", name)
 }
 
 // FriendRelationshipMutation represents an operation that mutates the FriendRelationship nodes in the graph.

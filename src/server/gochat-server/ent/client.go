@@ -12,6 +12,7 @@ import (
 	"gochat_server/ent/migrate"
 
 	"gochat_server/ent/chatrecord"
+	"gochat_server/ent/donotdisturb"
 	"gochat_server/ent/friendrelationship"
 	"gochat_server/ent/friendrequest"
 	"gochat_server/ent/group"
@@ -35,6 +36,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// ChatRecord is the client for interacting with the ChatRecord builders.
 	ChatRecord *ChatRecordClient
+	// DoNotDisturb is the client for interacting with the DoNotDisturb builders.
+	DoNotDisturb *DoNotDisturbClient
 	// FriendRelationship is the client for interacting with the FriendRelationship builders.
 	FriendRelationship *FriendRelationshipClient
 	// FriendRequest is the client for interacting with the FriendRequest builders.
@@ -67,6 +70,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.ChatRecord = NewChatRecordClient(c.config)
+	c.DoNotDisturb = NewDoNotDisturbClient(c.config)
 	c.FriendRelationship = NewFriendRelationshipClient(c.config)
 	c.FriendRequest = NewFriendRequestClient(c.config)
 	c.Group = NewGroupClient(c.config)
@@ -170,6 +174,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:                ctx,
 		config:             cfg,
 		ChatRecord:         NewChatRecordClient(cfg),
+		DoNotDisturb:       NewDoNotDisturbClient(cfg),
 		FriendRelationship: NewFriendRelationshipClient(cfg),
 		FriendRequest:      NewFriendRequestClient(cfg),
 		Group:              NewGroupClient(cfg),
@@ -200,6 +205,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:                ctx,
 		config:             cfg,
 		ChatRecord:         NewChatRecordClient(cfg),
+		DoNotDisturb:       NewDoNotDisturbClient(cfg),
 		FriendRelationship: NewFriendRelationshipClient(cfg),
 		FriendRequest:      NewFriendRequestClient(cfg),
 		Group:              NewGroupClient(cfg),
@@ -239,9 +245,9 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.ChatRecord, c.FriendRelationship, c.FriendRequest, c.Group, c.GroupChatRecord,
-		c.ImageMessage, c.Message, c.MessageStatus, c.TextMessage, c.User,
-		c.VideoMessage,
+		c.ChatRecord, c.DoNotDisturb, c.FriendRelationship, c.FriendRequest, c.Group,
+		c.GroupChatRecord, c.ImageMessage, c.Message, c.MessageStatus, c.TextMessage,
+		c.User, c.VideoMessage,
 	} {
 		n.Use(hooks...)
 	}
@@ -251,9 +257,9 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.ChatRecord, c.FriendRelationship, c.FriendRequest, c.Group, c.GroupChatRecord,
-		c.ImageMessage, c.Message, c.MessageStatus, c.TextMessage, c.User,
-		c.VideoMessage,
+		c.ChatRecord, c.DoNotDisturb, c.FriendRelationship, c.FriendRequest, c.Group,
+		c.GroupChatRecord, c.ImageMessage, c.Message, c.MessageStatus, c.TextMessage,
+		c.User, c.VideoMessage,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -264,6 +270,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *ChatRecordMutation:
 		return c.ChatRecord.mutate(ctx, m)
+	case *DoNotDisturbMutation:
+		return c.DoNotDisturb.mutate(ctx, m)
 	case *FriendRelationshipMutation:
 		return c.FriendRelationship.mutate(ctx, m)
 	case *FriendRequestMutation:
@@ -419,6 +427,139 @@ func (c *ChatRecordClient) mutate(ctx context.Context, m *ChatRecordMutation) (V
 		return (&ChatRecordDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown ChatRecord mutation op: %q", m.Op())
+	}
+}
+
+// DoNotDisturbClient is a client for the DoNotDisturb schema.
+type DoNotDisturbClient struct {
+	config
+}
+
+// NewDoNotDisturbClient returns a client for the DoNotDisturb from the given config.
+func NewDoNotDisturbClient(c config) *DoNotDisturbClient {
+	return &DoNotDisturbClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `donotdisturb.Hooks(f(g(h())))`.
+func (c *DoNotDisturbClient) Use(hooks ...Hook) {
+	c.hooks.DoNotDisturb = append(c.hooks.DoNotDisturb, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `donotdisturb.Intercept(f(g(h())))`.
+func (c *DoNotDisturbClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DoNotDisturb = append(c.inters.DoNotDisturb, interceptors...)
+}
+
+// Create returns a builder for creating a DoNotDisturb entity.
+func (c *DoNotDisturbClient) Create() *DoNotDisturbCreate {
+	mutation := newDoNotDisturbMutation(c.config, OpCreate)
+	return &DoNotDisturbCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DoNotDisturb entities.
+func (c *DoNotDisturbClient) CreateBulk(builders ...*DoNotDisturbCreate) *DoNotDisturbCreateBulk {
+	return &DoNotDisturbCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DoNotDisturbClient) MapCreateBulk(slice any, setFunc func(*DoNotDisturbCreate, int)) *DoNotDisturbCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DoNotDisturbCreateBulk{err: fmt.Errorf("calling to DoNotDisturbClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DoNotDisturbCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DoNotDisturbCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DoNotDisturb.
+func (c *DoNotDisturbClient) Update() *DoNotDisturbUpdate {
+	mutation := newDoNotDisturbMutation(c.config, OpUpdate)
+	return &DoNotDisturbUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DoNotDisturbClient) UpdateOne(dnd *DoNotDisturb) *DoNotDisturbUpdateOne {
+	mutation := newDoNotDisturbMutation(c.config, OpUpdateOne, withDoNotDisturb(dnd))
+	return &DoNotDisturbUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DoNotDisturbClient) UpdateOneID(id int) *DoNotDisturbUpdateOne {
+	mutation := newDoNotDisturbMutation(c.config, OpUpdateOne, withDoNotDisturbID(id))
+	return &DoNotDisturbUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DoNotDisturb.
+func (c *DoNotDisturbClient) Delete() *DoNotDisturbDelete {
+	mutation := newDoNotDisturbMutation(c.config, OpDelete)
+	return &DoNotDisturbDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DoNotDisturbClient) DeleteOne(dnd *DoNotDisturb) *DoNotDisturbDeleteOne {
+	return c.DeleteOneID(dnd.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DoNotDisturbClient) DeleteOneID(id int) *DoNotDisturbDeleteOne {
+	builder := c.Delete().Where(donotdisturb.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DoNotDisturbDeleteOne{builder}
+}
+
+// Query returns a query builder for DoNotDisturb.
+func (c *DoNotDisturbClient) Query() *DoNotDisturbQuery {
+	return &DoNotDisturbQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDoNotDisturb},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DoNotDisturb entity by its id.
+func (c *DoNotDisturbClient) Get(ctx context.Context, id int) (*DoNotDisturb, error) {
+	return c.Query().Where(donotdisturb.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DoNotDisturbClient) GetX(ctx context.Context, id int) *DoNotDisturb {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *DoNotDisturbClient) Hooks() []Hook {
+	return c.hooks.DoNotDisturb
+}
+
+// Interceptors returns the client interceptors.
+func (c *DoNotDisturbClient) Interceptors() []Interceptor {
+	return c.inters.DoNotDisturb
+}
+
+func (c *DoNotDisturbClient) mutate(ctx context.Context, m *DoNotDisturbMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DoNotDisturbCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DoNotDisturbUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DoNotDisturbUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DoNotDisturbDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DoNotDisturb mutation op: %q", m.Op())
 	}
 }
 
@@ -1755,13 +1896,13 @@ func (c *VideoMessageClient) mutate(ctx context.Context, m *VideoMessageMutation
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		ChatRecord, FriendRelationship, FriendRequest, Group, GroupChatRecord,
-		ImageMessage, Message, MessageStatus, TextMessage, User,
+		ChatRecord, DoNotDisturb, FriendRelationship, FriendRequest, Group,
+		GroupChatRecord, ImageMessage, Message, MessageStatus, TextMessage, User,
 		VideoMessage []ent.Hook
 	}
 	inters struct {
-		ChatRecord, FriendRelationship, FriendRequest, Group, GroupChatRecord,
-		ImageMessage, Message, MessageStatus, TextMessage, User,
+		ChatRecord, DoNotDisturb, FriendRelationship, FriendRequest, Group,
+		GroupChatRecord, ImageMessage, Message, MessageStatus, TextMessage, User,
 		VideoMessage []ent.Interceptor
 	}
 )

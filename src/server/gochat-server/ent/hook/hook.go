@@ -20,6 +20,18 @@ func (f ChatRecordFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ChatRecordMutation", m)
 }
 
+// The DoNotDisturbFunc type is an adapter to allow the use of ordinary
+// function as DoNotDisturb mutator.
+type DoNotDisturbFunc func(context.Context, *ent.DoNotDisturbMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f DoNotDisturbFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.DoNotDisturbMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DoNotDisturbMutation", m)
+}
+
 // The FriendRelationshipFunc type is an adapter to allow the use of ordinary
 // function as FriendRelationship mutator.
 type FriendRelationshipFunc func(context.Context, *ent.FriendRelationshipMutation) (ent.Value, error)

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"gochat_server/ent/chatrecord"
+	"gochat_server/ent/donotdisturb"
 	"gochat_server/ent/friendrequest"
 	"gochat_server/ent/group"
 	"gochat_server/ent/groupchatrecord"
@@ -35,6 +36,30 @@ func init() {
 	chatrecordDescCreateTime := chatrecordFields[6].Descriptor()
 	// chatrecord.DefaultCreateTime holds the default value on creation for the createTime field.
 	chatrecord.DefaultCreateTime = chatrecordDescCreateTime.Default.(func() time.Time)
+	donotdisturbFields := schema.DoNotDisturb{}.Fields()
+	_ = donotdisturbFields
+	// donotdisturbDescUserID is the schema descriptor for user_id field.
+	donotdisturbDescUserID := donotdisturbFields[1].Descriptor()
+	// donotdisturb.UserIDValidator is a validator for the "user_id" field. It is called by the builders before save.
+	donotdisturb.UserIDValidator = donotdisturbDescUserID.Validators[0].(func(int) error)
+	// donotdisturbDescIsGlobal is the schema descriptor for is_global field.
+	donotdisturbDescIsGlobal := donotdisturbFields[4].Descriptor()
+	// donotdisturb.DefaultIsGlobal holds the default value on creation for the is_global field.
+	donotdisturb.DefaultIsGlobal = donotdisturbDescIsGlobal.Default.(bool)
+	// donotdisturbDescCreatedAt is the schema descriptor for created_at field.
+	donotdisturbDescCreatedAt := donotdisturbFields[7].Descriptor()
+	// donotdisturb.DefaultCreatedAt holds the default value on creation for the created_at field.
+	donotdisturb.DefaultCreatedAt = donotdisturbDescCreatedAt.Default.(func() time.Time)
+	// donotdisturbDescUpdatedAt is the schema descriptor for updated_at field.
+	donotdisturbDescUpdatedAt := donotdisturbFields[8].Descriptor()
+	// donotdisturb.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	donotdisturb.DefaultUpdatedAt = donotdisturbDescUpdatedAt.Default.(func() time.Time)
+	// donotdisturb.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	donotdisturb.UpdateDefaultUpdatedAt = donotdisturbDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// donotdisturbDescID is the schema descriptor for id field.
+	donotdisturbDescID := donotdisturbFields[0].Descriptor()
+	// donotdisturb.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	donotdisturb.IDValidator = donotdisturbDescID.Validators[0].(func(int) error)
 	friendrequestFields := schema.FriendRequest{}.Fields()
 	_ = friendrequestFields
 	// friendrequestDescStatus is the schema descriptor for status field.

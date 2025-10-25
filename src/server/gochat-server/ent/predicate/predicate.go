@@ -9,6 +9,9 @@ import (
 // ChatRecord is the predicate function for chatrecord builders.
 type ChatRecord func(*sql.Selector)
 
+// DoNotDisturb is the predicate function for donotdisturb builders.
+type DoNotDisturb func(*sql.Selector)
+
 // FriendRelationship is the predicate function for friendrelationship builders.
 type FriendRelationship func(*sql.Selector)
 

@@ -47,6 +47,46 @@ var (
 			},
 		},
 	}
+	// DoNotDisturbsColumns holds the columns for the "do_not_disturbs" table.
+	DoNotDisturbsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "user_id", Type: field.TypeInt},
+		{Name: "target_user_id", Type: field.TypeInt, Nullable: true},
+		{Name: "target_group_id", Type: field.TypeInt, Nullable: true},
+		{Name: "is_global", Type: field.TypeBool, Default: false},
+		{Name: "start_time", Type: field.TypeTime, Nullable: true},
+		{Name: "end_time", Type: field.TypeTime, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// DoNotDisturbsTable holds the schema information for the "do_not_disturbs" table.
+	DoNotDisturbsTable = &schema.Table{
+		Name:       "do_not_disturbs",
+		Columns:    DoNotDisturbsColumns,
+		PrimaryKey: []*schema.Column{DoNotDisturbsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "donotdisturb_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{DoNotDisturbsColumns[1]},
+			},
+			{
+				Name:    "donotdisturb_user_id_target_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{DoNotDisturbsColumns[1], DoNotDisturbsColumns[2]},
+			},
+			{
+				Name:    "donotdisturb_user_id_target_group_id",
+				Unique:  true,
+				Columns: []*schema.Column{DoNotDisturbsColumns[1], DoNotDisturbsColumns[3]},
+			},
+			{
+				Name:    "donotdisturb_user_id_is_global",
+				Unique:  true,
+				Columns: []*schema.Column{DoNotDisturbsColumns[1], DoNotDisturbsColumns[4]},
+			},
+		},
+	}
 	// FriendRelationshipsColumns holds the columns for the "friend_relationships" table.
 	FriendRelationshipsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -266,6 +306,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		ChatRecordsTable,
+		DoNotDisturbsTable,
 		FriendRelationshipsTable,
 		FriendRequestsTable,
 		GroupsTable,
