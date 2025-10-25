@@ -157,11 +157,54 @@ class DesktopNotification {
   /// 更新 Windows 任务栏
   static Future<void> _updateWindowsTaskbar() async {
     try {
-      // Windows 任务栏闪烁
       if (_hasUnreadMessages) {
         await windowManager.setSkipTaskbar(false);
-        // 这里可以添加任务栏闪烁逻辑
-        // 由于 window_manager 包的限制，暂时只能更新标题
+        
+        // 增强的Windows任务栏闪烁效果
+        await Process.run('powershell', [
+          '-Command',
+          '''
+          Add-Type -TypeDefinition "
+            using System;
+            using System.Runtime.InteropServices;
+            public class Win32 {
+              [DllImport(\\"user32.dll\\")]
+              public static extern bool FlashWindow(IntPtr hWnd, bool bInvert);
+              [DllImport(\\"user32.dll\\")]
+              public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+              [DllImport(\\"user32.dll\\")]
+              public static extern bool FlashWindowEx(ref FLASHWINFO pwfi);
+              [StructLayout(LayoutKind.Sequential)]
+              public struct FLASHWINFO {
+                public uint cbSize;
+                public IntPtr hwnd;
+                public uint dwFlags;
+                public uint uCount;
+                public uint dwTimeout;
+              }
+              public const uint FLASHW_ALL = 3;
+              public const uint FLASHW_TIMERNOFG = 12;
+            }
+          "
+          
+          # 查找GoChat窗口
+          \$hwnd = [Win32]::FindWindow(\$null, "GoChat*")
+          if (\$hwnd -eq [IntPtr]::Zero) {
+            \$hwnd = [Win32]::FindWindow(\$null, "*GoChat*")
+          }
+          
+          if (\$hwnd -ne [IntPtr]::Zero) {
+            # 使用FlashWindowEx进行更好的闪烁效果
+            \$flash = New-Object Win32+FLASHWINFO
+            \$flash.cbSize = [System.Runtime.InteropServices.Marshal]::SizeOf(\$flash)
+            \$flash.hwnd = \$hwnd
+            \$flash.dwFlags = [Win32]::FLASHW_ALL -bor [Win32]::FLASHW_TIMERNOFG
+            \$flash.uCount = 5
+            \$flash.dwTimeout = 0
+            [Win32]::FlashWindowEx([ref]\$flash)
+          }
+          '''
+        ]);
       }
     } catch (e) {
       debugPrint('Failed to update Windows taskbar: $e');

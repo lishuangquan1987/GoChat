@@ -5,6 +5,7 @@ import (
 	"gochat_server/middlewares"
 	"gochat_server/services"
 	wsmanager "gochat_server/ws_manager"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -52,11 +53,25 @@ func SendMessage(c *gin.Context) {
 	if !isGroup {
 		// 私聊消息
 		if wsmanager.IsUserOnline(strconv.Itoa(parameter.ToUserId)) {
+			// 检查接收者是否设置了免打扰
+			isDoNotDisturb, err := services.IsDoNotDisturbActive(parameter.ToUserId, &userID, nil)
+			if err != nil {
+				// 免打扰检查失败，仍然发送消息但记录错误
+				log.Printf("Failed to check do not disturb status: %v", err)
+				isDoNotDisturb = false
+			}
+			
 			// 获取消息详情
 			messageDetail, err := services.GetMessageDetail(msgId)
 			if err == nil {
+				// 构建正确的WebSocket消息格式
+				wsMessage := map[string]interface{}{
+					"type": "message",
+					"data": messageDetail,
+					"doNotDisturb": isDoNotDisturb, // 添加免打扰标识
+				}
 				// 推送消息
-				wsmanager.SendMessageToUser(strconv.Itoa(parameter.ToUserId), messageDetail)
+				wsmanager.SendMessageToUser(strconv.Itoa(parameter.ToUserId), wsMessage)
 			}
 		}
 	} else {
@@ -69,7 +84,22 @@ func SendMessage(c *gin.Context) {
 			// 广播给所有在线群成员（除了发送者）
 			for _, member := range members {
 				if member.ID != userID && wsmanager.IsUserOnline(strconv.Itoa(member.ID)) {
-					wsmanager.SendMessageToUser(strconv.Itoa(member.ID), groupMessageDetail)
+					// 检查该成员是否设置了免打扰
+					isDoNotDisturb, err := services.IsDoNotDisturbActive(member.ID, nil, parameter.GroupId)
+					if err != nil {
+						// 免打扰检查失败，仍然发送消息但记录错误
+						log.Printf("Failed to check do not disturb status for user %d: %v", member.ID, err)
+						isDoNotDisturb = false
+					}
+					
+					// 构建正确的WebSocket消息格式
+					wsMessage := map[string]interface{}{
+						"type": "message",
+						"data": groupMessageDetail,
+						"doNotDisturb": isDoNotDisturb, // 添加免打扰标识
+					}
+					
+					wsmanager.SendMessageToUser(strconv.Itoa(member.ID), wsMessage)
 				}
 			}
 		}

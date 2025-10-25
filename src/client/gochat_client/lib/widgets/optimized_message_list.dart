@@ -117,14 +117,15 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
   void scrollToBottom({bool animated = true}) {
     if (!_scrollController.hasClients) return;
     
+    // 由于ListView使用了reverse=true，滚动到底部实际上是滚动到0位置
     if (animated) {
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        0.0,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
     } else {
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      _scrollController.jumpTo(0.0);
     }
   }
 

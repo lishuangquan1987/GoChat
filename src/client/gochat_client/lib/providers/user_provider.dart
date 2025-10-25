@@ -16,6 +16,10 @@ class UserProvider with ChangeNotifier {
   bool get isLoggedIn => _isLoggedIn;
   WebSocketService? get wsService => _wsService;
 
+  void setWebSocketService(WebSocketService service) {
+    _wsService = service;
+  }
+
   Future<bool> checkLoginStatus() async {
     _token = await StorageService.getToken();
     if (_token != null) {

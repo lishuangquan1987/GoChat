@@ -57,21 +57,12 @@ class ChatProvider with ChangeNotifier {
         shouldNotify = true;
       }
     } else {
-      // 添加新消息，确保按时间顺序插入
+      // 添加新消息，直接添加到末尾（最新消息）
       final messages = _messages[conversationId]!;
-      int insertIndex = messages.length;
       
-      // 找到正确的插入位置（保持时间顺序）
-      for (int i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].createTime.isBefore(message.createTime) || 
-            messages[i].createTime.isAtSameMomentAs(message.createTime)) {
-          insertIndex = i + 1;
-          break;
-        }
-        insertIndex = i;
-      }
-      
-      messages.insert(insertIndex, message);
+      // 对于新消息，通常都是最新的，直接添加到末尾
+      // 这样可以避免插入位置计算导致的滚动问题
+      messages.add(message);
       shouldNotify = true;
       isNewMessage = true;
       
@@ -202,6 +193,10 @@ class ChatProvider with ChangeNotifier {
         unreadCount: 0,
         lastTime: oldConv.lastTime,
       );
+      
+      // 保存会话到本地存储
+      _saveConversationsToStorage();
+      
       _debouncedNotify();
     }
   }

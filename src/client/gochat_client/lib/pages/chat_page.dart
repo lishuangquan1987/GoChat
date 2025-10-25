@@ -11,8 +11,10 @@ import '../providers/group_provider.dart';
 
 import '../widgets/optimized_message_list.dart';
 import '../services/api_service.dart';
+import '../services/message_dispatcher.dart';
 import '../utils/performance_monitor.dart';
 import '../utils/image_cache_manager.dart';
+import '../utils/desktop_notification.dart';
 import 'group_detail_page.dart';
 
 class ChatPage extends StatefulWidget {
@@ -48,6 +50,10 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
     if (widget.conversation.type == ConversationType.group) {
       _loadGroupMembers();
     }
+    
+    // 清除未读消息计数
+    _clearUnreadCount();
+    
     _performanceMonitor.endTimer('chat_page_init');
   }
   
@@ -85,53 +91,63 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
     final userProvider = context.read<UserProvider>();
     final chatProvider = context.read<ChatProvider>();
     
+    // 直接监听WebSocket消息流
     if (userProvider.wsService != null) {
       userProvider.wsService!.messageStream.listen((data) {
-        if (data['type'] == 'message') {
-          final messageData = data['data'];
-          final message = Message.fromJson(messageData);
-          
-          // 检查消息是否属于当前会话
-          bool isCurrentConversation = false;
-          if (widget.conversation.type == ConversationType.private) {
-            isCurrentConversation = 
-                (message.fromUserId == widget.conversation.user?.id && 
-                 message.toUserId == userProvider.currentUser?.id) ||
-                (message.fromUserId == userProvider.currentUser?.id && 
-                 message.toUserId == widget.conversation.user?.id);
-          } else if (widget.conversation.type == ConversationType.group) {
-            isCurrentConversation = 
-                message.isGroup && 
-                message.groupId == widget.conversation.group?.id;
+        final messageType = data['type'] as String?;
+        
+        if (messageType == 'message') {
+          final messageData = data['data'] as Map<String, dynamic>?;
+          if (messageData != null) {
+            try {
+              final message = Message.fromJson(messageData);
+              
+              // 检查消息是否属于当前会话
+              bool isCurrentConversation = false;
+              if (widget.conversation.type == ConversationType.private) {
+                // 私聊：检查是否是与当前聊天对象的消息
+                isCurrentConversation = 
+                    (message.fromUserId == widget.conversation.user?.id && 
+                     message.toUserId == userProvider.currentUser?.id) ||
+                    (message.fromUserId == userProvider.currentUser?.id && 
+                     message.toUserId == widget.conversation.user?.id);
+              } else if (widget.conversation.type == ConversationType.group) {
+                // 群聊：检查群ID
+                isCurrentConversation = 
+                    message.isGroup && 
+                    message.groupId == widget.conversation.group?.id;
+              }
+              
+              if (isCurrentConversation) {
+                debugPrint('ChatPage: Received message for current conversation');
+                
+                // 添加消息到ChatProvider（标记为当前聊天，不增加未读数）
+                chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
+                
+                // 自动滚动到底部
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    _messageListKey.currentState?.scrollToBottom();
+                  }
+                });
+                
+                // 预加载图片消息
+                if (message.msgType == MessageType.image) {
+                  _imagePreloader.preloadImagesForMessages([message.content]);
+                }
+                
+                // 发送消息送达确认和已读确认（如果是接收到的消息）
+                if (message.fromUserId != userProvider.currentUser?.id) {
+                  _markMessageAsDelivered(message);
+                  _markMessageAsRead(message);
+                }
+              }
+            } catch (e) {
+              debugPrint('ChatPage: Error parsing message: $e');
+            }
           }
-          
-          if (isCurrentConversation) {
-            // 标记为当前聊天，不会增加未读数
-            chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
-            
-            // 自动滚动到底部
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _messageListKey.currentState?.scrollToBottom();
-            });
-            
-            // 预加载图片消息
-            if (message.msgType == MessageType.image) {
-              _imagePreloader.preloadImagesForMessages([message.content]);
-            }
-            
-            // 显示通知（如果消息不是自己发送的）
-            if (message.fromUserId != userProvider.currentUser?.id) {
-              _showMessageNotification(message);
-            }
-            
-            // 发送消息送达确认和已读确认（如果是接收到的消息）
-            if (message.fromUserId != userProvider.currentUser?.id) {
-              _markMessageAsDelivered(message);
-              _markMessageAsRead(message);
-            }
-          }
-        } else if (data['type'] == 'message_status') {
-          // 处理消息状态更新（已读、已送达等）
+        } else if (messageType == 'message_status') {
+          // 处理消息状态更新
           final msgId = data['msgId'] as String?;
           final status = data['status'] as String?;
           
@@ -143,18 +159,7 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
     }
   }
 
-  void _showMessageNotification(Message message) {
-    // 简单的应用内通知
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('收到新消息: ${message.content}'),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
+
 
   Future<void> _loadChatHistory() async {
     _performanceMonitor.startTimer('load_chat_history');
@@ -471,8 +476,10 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
     // 添加到消息列表
     chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
     
-    // 滚动到底部
-    _messageListKey.currentState?.scrollToBottom();
+    // 延迟滚动到底部，确保ListView已经重建
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _messageListKey.currentState?.scrollToBottom();
+    });
 
     try {
       // 发送消息到服务器
@@ -701,6 +708,16 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
         builder: (context) => GroupDetailPage(group: widget.conversation.group!),
       ),
     );
+  }
+
+  void _clearUnreadCount() {
+    final chatProvider = context.read<ChatProvider>();
+    chatProvider.clearUnreadCount(widget.conversation.id);
+    
+    // 更新桌面通知状态
+    final totalUnread = chatProvider.conversations
+        .fold<int>(0, (sum, conv) => sum + conv.unreadCount);
+    DesktopNotification.updateUnreadStatus(unreadCount: totalUnread);
   }
 
   // 标记消息为已送达

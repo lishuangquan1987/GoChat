@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
@@ -6,6 +7,7 @@ import '../providers/friend_provider.dart';
 import '../models/message.dart';
 import '../models/user.dart';
 import '../models/group.dart';
+import '../models/conversation.dart';
 
 import '../services/websocket_service.dart' as ws;
 import '../services/notification_service.dart';
@@ -25,13 +27,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
-  final _wsService = ws.WebSocketService();
   final _notificationService = NotificationService();
+  StreamSubscription<Map<String, dynamic>>? _wsSubscription;
 
   @override
   void initState() {
     super.initState();
-    _connectWebSocket();
+    _setupWebSocketConnection();
     _setupNotificationListener();
   }
 
@@ -43,7 +45,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _connectWebSocket() {
+  void _setupWebSocketConnection() {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
     
@@ -51,294 +53,186 @@ class _HomePageState extends State<HomePage> {
       // 加载本地会话数据
       chatProvider.loadConversationsFromStorage();
       
-      _wsService.connect(
-        userProvider.currentUser!.id.toString(),
-        userProvider.token!,
-      );
+      // 确保WebSocket连接
+      if (userProvider.wsService == null) {
+        final wsService = ws.WebSocketService();
+        userProvider.setWebSocketService(wsService);
+        wsService.connect(
+          userProvider.currentUser!.id.toString(),
+          userProvider.token!,
+        );
+      }
       
-      _wsService.messageStream.listen((message) {
-        _handleWebSocketMessage(message);
-        chatProvider.setConnected(true);
+      // 直接监听WebSocket消息流，简化架构
+      _wsSubscription = userProvider.wsService!.messageStream.listen((data) {
+        _handleWebSocketMessage(data);
       });
-
-      _wsService.connectionStateStream.listen((state) {
+      
+      // 监听连接状态
+      userProvider.wsService!.connectionStateStream.listen((state) {
         chatProvider.setConnected(state == ws.ConnectionState.connected);
       });
     }
   }
 
-  void _handleWebSocketMessage(Map<String, dynamic> message) {
-    final messageType = message['type'] as String?;
+  void _handleWebSocketMessage(Map<String, dynamic> data) {
+    final messageType = data['type'] as String?;
+    debugPrint('HomePage: Received WebSocket message: $messageType');
     
     switch (messageType) {
-      case 'friend_request':
-        _handleFriendRequestNotification(message);
-        break;
-      case 'friend_request_accepted':
-        _handleFriendRequestAcceptedNotification(message);
-        break;
       case 'message':
-        _handleMessageNotification(message);
+        _handleChatMessage(data);
         break;
-      case 'private_message':
-        _handlePrivateMessageNotification(message);
+      case 'friend_request':
+        _handleFriendRequest(data);
         break;
-      case 'group_message':
-        _handleGroupMessageNotification(message);
+      case 'system':
+        _handleSystemMessage(data);
         break;
       default:
-        // Handle other message types
-        break;
+        debugPrint('HomePage: Unhandled message type: $messageType');
     }
   }
 
-  void _handleFriendRequestNotification(Map<String, dynamic> message) {
-    final friendProvider = Provider.of<FriendProvider>(context, listen: false);
-    friendProvider.handleFriendRequestNotification(message);
+  void _handleChatMessage(Map<String, dynamic> data) {
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
     
-    // 显示好友请求通知
-    final data = message['data'] as Map<String, dynamic>?;
-    if (data != null) {
-      _notificationService.showFriendRequestNotification(
-        fromUserName: data['fromUserNickname'] as String? ?? '未知用户',
-        requestId: data['id'] as int? ?? 0,
-        data: data,
+    try {
+      final messageData = data['data'] as Map<String, dynamic>?;
+      if (messageData == null) return;
+
+      final message = Message.fromJson(messageData);
+      
+      // 检查是否为免打扰消息
+      final isDoNotDisturb = data['doNotDisturb'] as bool? ?? false;
+      
+      // 确定会话ID
+      String conversationId;
+      if (message.isGroup) {
+        conversationId = 'group_${message.groupId}';
+      } else {
+        // 对于私聊，使用发送者ID作为会话ID（接收到的消息）
+        conversationId = 'private_${message.fromUserId}';
+      }
+
+      debugPrint('HomePage: Processing message for conversation $conversationId, doNotDisturb: $isDoNotDisturb');
+      
+      // 添加消息到ChatProvider（标记为非当前聊天，会增加未读数）
+      chatProvider.addMessage(conversationId, message, isCurrentChat: false);
+
+      // 创建或更新会话
+      _createOrUpdateConversation(message, conversationId, chatProvider);
+
+      // 只有在非免打扰状态下才显示通知
+      if (!isDoNotDisturb) {
+        // 显示通知
+        final fromUserName = '用户${message.fromUserId}';
+        final messagePreview = _getMessagePreview(message);
+        
+        _notificationService.showMessageNotification(
+          fromUserName: fromUserName,
+          content: messagePreview,
+          conversationId: conversationId,
+          data: {'message': message.toJson()},
+        );
+
+        // 更新桌面通知
+        final totalUnread = chatProvider.conversations
+            .fold<int>(0, (sum, conv) => sum + conv.unreadCount);
+        DesktopNotification.updateUnreadStatus(
+          unreadCount: totalUnread,
+          title: fromUserName,
+          message: messagePreview,
+        );
+      } else {
+        debugPrint('HomePage: Message notification suppressed due to do not disturb');
+      }
+
+    } catch (e) {
+      debugPrint('HomePage: Error handling chat message: $e');
+    }
+  }
+
+  void _createOrUpdateConversation(Message message, String conversationId, ChatProvider chatProvider) {
+    if (message.isGroup) {
+      // 群聊会话
+      final group = Group(
+        id: message.groupId!,
+        groupId: 'group_${message.groupId}',
+        groupName: '群聊${message.groupId}',
+        ownerId: 0,
+        createUserId: 0,
+        createTime: DateTime.now(),
+        members: [],
+      );
+      final conversation = chatProvider.getOrCreateGroupConversation(group);
+      chatProvider.updateConversation(
+        conversation.id,
+        lastMessage: message,
+        lastTime: message.createTime,
+      );
+    } else {
+      // 私聊会话
+      final user = User(
+        id: message.fromUserId,
+        username: 'user${message.fromUserId}',
+        nickname: '用户${message.fromUserId}',
+        sex: 0,
+      );
+      final conversation = chatProvider.getOrCreatePrivateConversation(user);
+      chatProvider.updateConversation(
+        conversation.id,
+        lastMessage: message,
+        lastTime: message.createTime,
       );
     }
   }
 
-  void _handleFriendRequestAcceptedNotification(Map<String, dynamic> message) {
+  String _getMessagePreview(Message message) {
+    switch (message.msgType) {
+      case MessageType.text:
+        return message.content;
+      case MessageType.image:
+        return '[图片]';
+      case MessageType.video:
+        return '[视频]';
+      default:
+        return '[消息]';
+    }
+  }
+
+  void _handleFriendRequest(Map<String, dynamic> data) {
     final friendProvider = Provider.of<FriendProvider>(context, listen: false);
-    friendProvider.handleFriendRequestAcceptedNotification(message);
+    friendProvider.handleFriendRequestNotification(data);
     
-    // 显示系统通知
-    _notificationService.showSystemNotification(
-      title: '好友请求',
-      content: message['message'] as String? ?? '好友请求已被接受',
-    );
-  }
-
-  void _handleMessageNotification(Map<String, dynamic> message) {
-    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-    
-    // 处理实际的消息数据
-    final data = message['data'] as Map<String, dynamic>?;
-    if (data != null) {
-      try {
-        final messageObj = Message.fromJson(data);
-        
-        // 判断是私聊还是群聊
-        if (messageObj.isGroup) {
-          // 群聊消息
-          final conversationId = 'group_${messageObj.groupId}';
-          
-          // 添加消息到聊天记录（标记为非当前聊天，会增加未读数）
-          chatProvider.addMessage(conversationId, messageObj, isCurrentChat: false);
-          
-          // 创建或更新会话
-          if (messageObj.groupId != null) {
-            final group = Group(
-              id: messageObj.groupId!,
-              groupId: 'group_${messageObj.groupId}',
-              groupName: data['groupName'] as String? ?? '群聊${messageObj.groupId}',
-              ownerId: 0,
-              createUserId: 0,
-              createTime: DateTime.now(),
-              members: [],
-            );
-            
-            final conversation = chatProvider.getOrCreateGroupConversation(group);
-            chatProvider.updateConversation(
-              conversation.id,
-              lastMessage: messageObj,
-              lastTime: messageObj.createTime,
-            );
-          }
-          
-          // 显示通知
-          final fromUserName = data['fromUserNickname'] as String? ?? '群成员';
-          final groupName = data['groupName'] as String? ?? '群聊';
-          final messagePreview = _getMessagePreview(messageObj);
-          
-          _notificationService.showMessageNotification(
-            fromUserName: '$fromUserName@$groupName',
-            content: messagePreview,
-            conversationId: conversationId,
-            data: data,
-          );
-        } else {
-          // 私聊消息
-          final conversationId = 'private_${messageObj.fromUserId}';
-          
-          // 添加消息到聊天记录（标记为非当前聊天，会增加未读数）
-          chatProvider.addMessage(conversationId, messageObj, isCurrentChat: false);
-          
-          // 创建或更新会话
-          final user = User(
-            id: messageObj.fromUserId,
-            username: data['fromUserName'] as String? ?? 'user${messageObj.fromUserId}',
-            nickname: data['fromUserNickname'] as String? ?? '用户${messageObj.fromUserId}',
-            sex: 0,
-          );
-          
-          final conversation = chatProvider.getOrCreatePrivateConversation(user);
-          chatProvider.updateConversation(
-            conversation.id,
-            lastMessage: messageObj,
-            lastTime: messageObj.createTime,
-          );
-          
-          // 显示通知
-          final fromUserName = data['fromUserNickname'] as String? ?? '未知用户';
-          final messagePreview = _getMessagePreview(messageObj);
-          
-          _notificationService.showMessageNotification(
-            fromUserName: fromUserName,
-            content: messagePreview,
-            conversationId: conversationId,
-            data: data,
-          );
-        }
-        
-        // 更新桌面通知
-        final totalUnread = chatProvider.conversations
-            .fold<int>(0, (sum, conv) => sum + conv.unreadCount);
-        final fromUserName = data['fromUserNickname'] as String? ?? '未知用户';
-        final messagePreview = _getMessagePreview(messageObj);
-        
-        DesktopNotification.updateUnreadStatus(
-          unreadCount: totalUnread,
-          title: fromUserName,
-          message: messagePreview,
-        );
-      } catch (e) {
-        print('Failed to parse message: $e');
-      }
+    final requestData = data['data'] as Map<String, dynamic>?;
+    if (requestData != null) {
+      _notificationService.showFriendRequestNotification(
+        fromUserName: requestData['fromUserNickname'] as String? ?? '未知用户',
+        requestId: requestData['id'] as int? ?? 0,
+        data: requestData,
+      );
     }
   }
 
-  void _handlePrivateMessageNotification(Map<String, dynamic> message) {
-    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-    
-    // 处理实际的消息数据
-    final data = message['data'] as Map<String, dynamic>?;
-    if (data != null) {
-      final fromUserId = data['fromUserId'] as int?;
-      final conversationId = 'private_$fromUserId';
-      
-      // 创建消息对象
-      try {
-        final messageObj = Message.fromJson(data);
-        
-        // 添加消息到聊天记录（标记为非当前聊天，会增加未读数）
-        chatProvider.addMessage(conversationId, messageObj, isCurrentChat: false);
-        
-        // 创建或更新会话
-        if (fromUserId != null) {
-          // 这里需要获取发送者信息来创建会话
-          // 暂时使用基本信息创建会话
-          final user = User(
-            id: fromUserId,
-            username: data['fromUserName'] as String? ?? 'user$fromUserId',
-            nickname: data['fromUserNickname'] as String? ?? '用户$fromUserId',
-            sex: 0,
-          );
-          
-          final conversation = chatProvider.getOrCreatePrivateConversation(user);
-          chatProvider.updateConversation(
-            conversation.id,
-            lastMessage: messageObj,
-            lastTime: messageObj.createTime,
-          );
-        }
-        
-        // 显示通知
-        final fromUserName = data['fromUserNickname'] as String? ?? '未知用户';
-        final messagePreview = _getMessagePreview(messageObj);
-        
-        _notificationService.showMessageNotification(
-          fromUserName: fromUserName,
-          content: messagePreview,
-          conversationId: conversationId,
-          data: data,
-        );
-        
-        // 更新桌面通知
-        final totalUnread = chatProvider.conversations
-            .fold<int>(0, (sum, conv) => sum + conv.unreadCount);
-        DesktopNotification.updateUnreadStatus(
-          unreadCount: totalUnread,
-          title: fromUserName,
-          message: messagePreview,
-        );
-      } catch (e) {
-        print('Failed to parse message: $e');
-      }
+  void _handleSystemMessage(Map<String, dynamic> data) {
+    final message = data['message'] as String?;
+    if (message != null) {
+      _notificationService.showSystemNotification(
+        title: '系统通知',
+        content: message,
+      );
     }
   }
 
-  void _handleGroupMessageNotification(Map<String, dynamic> message) {
-    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-    
-    // 处理实际的消息数据
-    final data = message['data'] as Map<String, dynamic>?;
-    if (data != null) {
-      final groupId = data['groupId'] as int?;
-      final conversationId = 'group_$groupId';
-      
-      // 创建消息对象
-      try {
-        final messageObj = Message.fromJson(data);
-        
-        // 添加消息到聊天记录（标记为非当前聊天，会增加未读数）
-        chatProvider.addMessage(conversationId, messageObj, isCurrentChat: false);
-        
-        // 创建或更新会话
-        if (groupId != null) {
-          // 这里需要获取群组信息来创建会话
-          // 暂时使用基本信息创建会话
-          final group = Group(
-            id: groupId,
-            groupId: 'group_$groupId',
-            groupName: data['groupName'] as String? ?? '群聊$groupId',
-            ownerId: 0,
-            createUserId: 0,
-            members: [],
-            createTime: DateTime.now(),
-          );
-          
-          final conversation = chatProvider.getOrCreateGroupConversation(group);
-          chatProvider.updateConversation(
-            conversation.id,
-            lastMessage: messageObj,
-            lastTime: messageObj.createTime,
-          );
-        }
-        
-        // 显示通知
-        final fromUserName = '${data['fromUserNickname'] ?? '未知用户'} (${data['groupName'] ?? '群聊'})';
-        final messagePreview = _getMessagePreview(messageObj);
-        
-        _notificationService.showMessageNotification(
-          fromUserName: fromUserName,
-          content: messagePreview,
-          conversationId: conversationId,
-          data: data,
-        );
-        
-        // 更新桌面通知
-        final totalUnread = chatProvider.conversations
-            .fold<int>(0, (sum, conv) => sum + conv.unreadCount);
-        DesktopNotification.updateUnreadStatus(
-          unreadCount: totalUnread,
-          title: fromUserName,
-          message: messagePreview,
-        );
-      } catch (e) {
-        print('Failed to parse group message: $e');
-      }
-    }
-  }
+
+
+
+
+
+
+
 
   void _showInAppNotification(NotificationData notification) {
     Widget? avatar;
@@ -399,23 +293,11 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 获取消息预览文本
-  String _getMessagePreview(Message message) {
-    switch (message.msgType) {
-      case MessageType.text:
-        return message.content;
-      case MessageType.image:
-        return '[图片]';
-      case MessageType.video:
-        return '[视频]';
-      default:
-        return '[消息]';
-    }
-  }
+
 
   @override
   void dispose() {
-    _wsService.dispose();
+    _wsSubscription?.cancel();
     _notificationService.dispose();
     super.dispose();
   }

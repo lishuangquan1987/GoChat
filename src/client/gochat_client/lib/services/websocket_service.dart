@@ -113,36 +113,10 @@ class WebSocketService {
       
       print('Received WebSocket message: type=$messageType');
       
-      // 处理不同类型的消息
-      switch (messageType) {
-        case WSMessageType.system:
-          _handleSystemMessage(data);
-          break;
-        case WSMessageType.notification:
-          _handleNotification(data);
-          break;
-        case WSMessageType.ack:
-          _handleAckMessage(data);
-          break;
-        case WSMessageType.error:
-          _handleErrorMessage(data);
-          break;
-        case WSMessageType.friendRequest:
-          _handleFriendRequestNotification(data);
-          break;
-        case WSMessageType.friendRequestAccepted:
-          _handleFriendRequestAcceptedNotification(data);
-          break;
-        case WSMessageType.privateMessage:
-          _handlePrivateMessageNotification(data);
-          break;
-        case WSMessageType.groupMessage:
-          _handleGroupMessageNotification(data);
-          break;
-        default:
-          // 将消息发送到流中供外部处理
-          _messageController.add(data);
-      }
+      // 直接将所有消息发送到流中，让MessageDispatcher统一处理
+      // 这样可以确保所有消息都被正确处理
+      _messageController.add(data);
+      
     } catch (e) {
       print('Failed to parse WebSocket message: $e');
     }
