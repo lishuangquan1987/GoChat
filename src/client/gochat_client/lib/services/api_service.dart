@@ -21,13 +21,26 @@ class ApiService {
       onRequest: (options, handler) async {
         // 添加 token
         final token = await StorageService.getToken();
+        print('DEBUG API: Token from storage: $token');
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
+          print('DEBUG API: Added Authorization header');
+        } else {
+          print('DEBUG API: No token available for request to ${options.path}');
         }
+        print('DEBUG API: Request headers: ${options.headers}');
         return handler.next(options);
       },
-      onError: (error, handler) {
+      onError: (error, handler) async {
         // 统一错误处理
+        print('DEBUG API: Error occurred: ${error.response?.statusCode} - ${error.message}');
+        if (error.response?.statusCode == 401) {
+          print('DEBUG API: 401 Unauthorized - Token may be invalid or expired');
+          // 清除无效的token和用户数据
+          await StorageService.deleteToken();
+          await StorageService.deleteUser();
+          print('DEBUG API: Cleared invalid token and user data');
+        }
         return handler.next(error);
       },
     ));

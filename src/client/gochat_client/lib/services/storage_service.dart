@@ -16,10 +16,10 @@ class StorageService {
 
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
-    
+
     // 初始化用户数据目录
     await _initUserDataDirectory();
-    
+
     // 获取当前用户ID（如果存在）
     _currentUserId = _prefs?.getString(_currentUserIdKey);
   }
@@ -28,7 +28,7 @@ class StorageService {
     try {
       final appDir = await getApplicationDocumentsDirectory();
       _userDataDir = '${appDir.path}/GoChat';
-      
+
       // 确保目录存在
       final dir = Directory(_userDataDir!);
       if (!await dir.exists()) {
@@ -60,13 +60,13 @@ class StorageService {
     if (_userDataDir == null || _currentUserId == null) {
       return null;
     }
-    
+
     final userDir = '$_userDataDir/$_currentUserId';
     final dir = Directory(userDir);
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
-    
+
     return userDir;
   }
 
@@ -78,7 +78,18 @@ class StorageService {
 
   static Future<String?> getToken() async {
     final key = _getUserSpecificKey(_tokenKey);
-    return await _storage.read(key: key);
+    // 先读带用户前缀的 key（新版本）
+    String? token = await _storage.read(key: key);
+    if (token != null && token.isNotEmpty) {
+      return token;
+    }
+    // 兼容旧版本：尝试读取未带用户前缀的历史 key
+    try {
+      final legacy = await _storage.read(key: _tokenKey);
+      return legacy;
+    } catch (_) {
+      return null;
+    }
   }
 
   static Future<void> deleteToken() async {
@@ -90,7 +101,7 @@ class StorageService {
   static Future<void> saveUser(Map<String, dynamic> user) async {
     final key = _getUserSpecificKey(_userKey);
     await _prefs?.setString(key, jsonEncode(user));
-    
+
     // 同时保存到用户专用目录
     await _saveUserToFile(user);
   }
@@ -101,7 +112,7 @@ class StorageService {
     if (userStr != null) {
       return jsonDecode(userStr) as Map<String, dynamic>;
     }
-    
+
     // 尝试从文件读取
     return await _getUserFromFile();
   }
@@ -109,7 +120,7 @@ class StorageService {
   static Future<void> deleteUser() async {
     final key = _getUserSpecificKey(_userKey);
     await _prefs?.remove(key);
-    
+
     // 删除用户文件
     await _deleteUserFile();
   }
@@ -162,7 +173,7 @@ class StorageService {
       // 只清除当前用户的数据
       await deleteToken();
       await deleteUser();
-      
+
       // 清除当前用户的所有SharedPreferences数据
       final keys = _prefs?.getKeys() ?? <String>{};
       for (final key in keys) {
@@ -170,7 +181,7 @@ class StorageService {
           await _prefs?.remove(key);
         }
       }
-      
+
       // 清除用户数据目录
       await _clearUserDataDirectory();
     }
@@ -193,7 +204,7 @@ class StorageService {
   // 获取所有已登录过的用户列表
   static Future<List<Map<String, dynamic>>> getAllUsers() async {
     final users = <Map<String, dynamic>>[];
-    
+
     try {
       if (_userDataDir != null) {
         final mainDir = Directory(_userDataDir!);
@@ -217,7 +228,7 @@ class StorageService {
     } catch (e) {
       print('Failed to get all users: $e');
     }
-    
+
     return users;
   }
 
@@ -280,7 +291,8 @@ class StorageService {
   }
 
   // 保存会话数据到文件
-  static Future<void> saveConversations(List<Map<String, dynamic>> conversations) async {
+  static Future<void> saveConversations(
+      List<Map<String, dynamic>> conversations) async {
     try {
       final userDataPath = await getUserDataPath();
       if (userDataPath != null) {
@@ -311,7 +323,8 @@ class StorageService {
   }
 
   // 保存消息数据到文件
-  static Future<void> saveMessages(String conversationId, List<Map<String, dynamic>> messages) async {
+  static Future<void> saveMessages(
+      String conversationId, List<Map<String, dynamic>> messages) async {
     try {
       final userDataPath = await getUserDataPath();
       if (userDataPath != null) {
@@ -319,7 +332,7 @@ class StorageService {
         if (!await messagesDir.exists()) {
           await messagesDir.create(recursive: true);
         }
-        
+
         final file = File('$userDataPath/messages/$conversationId.json');
         await file.writeAsString(jsonEncode(messages));
       }
@@ -329,7 +342,8 @@ class StorageService {
   }
 
   // 从文件读取消息数据
-  static Future<List<Map<String, dynamic>>> getMessages(String conversationId) async {
+  static Future<List<Map<String, dynamic>>> getMessages(
+      String conversationId) async {
     try {
       final userDataPath = await getUserDataPath();
       if (userDataPath != null) {

@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -16,6 +17,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		// 从 Header 中获取 token
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
+			log.Printf("AuthMiddleware: missing Authorization header")
 			c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
 				Code:    401,
 				Message: "未提供认证token",
@@ -27,6 +29,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		// 检查 Bearer 前缀
 		parts := strings.SplitN(authHeader, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
+			log.Printf("AuthMiddleware: invalid Authorization format: %s", authHeader)
 			c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
 				Code:    401,
 				Message: "token格式错误",
@@ -40,6 +43,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		// 解析 token
 		claims, err := authmanager.ParseToken(token)
 		if err != nil {
+			log.Printf("AuthMiddleware: token parse failed: %v", err)
 			c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
 				Code:    401,
 				Message: "无效的token",

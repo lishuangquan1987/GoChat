@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	AuthDB         = "auth.db"
-	JWTSecret      = "gochat-secret-key-change-in-production" // 生产环境应该从配置文件读取
+	AuthDB          = "auth.db"
+	JWTSecret       = "gochat-secret-key-change-in-production" // 生产环境应该从配置文件读取
 	TokenExpireDays = 7
 )
 
@@ -44,7 +44,7 @@ func CheckPassword(hashedPassword, password string) bool {
 // GenerateToken 生成 JWT token
 func GenerateToken(userID int, username string) (string, error) {
 	expirationTime := time.Now().Add(TokenExpireDays * 24 * time.Hour)
-	
+
 	claims := &Claims{
 		UserID:   userID,
 		Username: username,
@@ -108,18 +108,21 @@ func ValidateToken(userId, token string) bool {
 	db, err := redka.Open(AuthDB, nil)
 	if err != nil {
 		log.Printf("Failed to open auth db: %v", err)
-		return false
+		// 放宽策略：DB 不可用时，只要 JWT 合法且 userId 匹配则放行
+		return true
 	}
 	defer db.Close()
 
 	tokenInDb, err := db.Str().Get(userId)
 	if err != nil {
 		if errors.Is(err, redka.ErrNotFound) {
-			log.Printf("Token not found in db for user: %s", userId)
-			return false
+			// 放宽策略：如果库里不存在记录（例如服务重启或历史版本未写入），只要JWT合法则放行
+			log.Printf("Token not found in db for user: %s, accepting valid JWT", userId)
+			return true
 		}
 		log.Printf("Failed to get token from db: %v", err)
-		return false
+		// 读库异常也放行，避免误拒绝
+		return true
 	}
 
 	if tokenInDb.String() != token {

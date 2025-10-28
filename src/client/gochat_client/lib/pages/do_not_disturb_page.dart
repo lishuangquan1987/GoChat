@@ -25,15 +25,30 @@ class _DoNotDisturbPageState extends State<DoNotDisturbPage> {
       setState(() => _isLoading = true);
       final settings = await _dndService.getDoNotDisturbSettings();
       setState(() {
-        _settings = settings;
+        _settings = settings ?? [];
         _isLoading = false;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
+      print('DEBUG DND PAGE: Error loading settings: $e');
+      setState(() {
+        _settings = [];
+        _isLoading = false;
+      });
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载免打扰设置失败: $e')),
-        );
+        // 检查是否是401认证错误
+        if (e.toString().contains('401')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('认证已过期，请重新登录'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('加载免打扰设置失败: $e')),
+          );
+        }
       }
     }
   }

@@ -2,9 +2,8 @@ package msgrecvhandler
 
 import (
 	"encoding/json"
-	"gochat_server/dto"
-	"gochat_server/services"
 	msgsendhandler "gochat_server/msg_send_handler"
+	"gochat_server/services"
 	"log"
 	"strconv"
 )
@@ -21,10 +20,10 @@ const (
 
 // WSMessage WebSocket消息结构
 type WSMessage struct {
-	Type    string                 `json:"type"`
-	Data    map[string]interface{} `json:"data"`
-	MsgId   string                 `json:"msgId,omitempty"`
-	Time    int64                  `json:"time,omitempty"`
+	Type  string                 `json:"type"`
+	Data  map[string]interface{} `json:"data"`
+	MsgId string                 `json:"msgId,omitempty"`
+	Time  int64                  `json:"time,omitempty"`
 }
 
 // HandleIncomingMessage 处理从客户端接收到的WebSocket消息
@@ -99,13 +98,7 @@ func handleChatMessage(userId string, wsMsg WSMessage) error {
 	msgId, err := services.SendMessage(fromUserId, toUserId, msgType, content, groupId)
 	if err != nil {
 		log.Printf("Error saving message: %v", err)
-		// 发送错误响应给发送者
-		errorMsg := map[string]interface{}{
-			"type":    "error",
-			"message": err.Error(),
-			"refMsgId": wsMsg.MsgId,
-		}
-		// 这里需要通过ws_manager发送错误消息
+		// 发送错误响应给发送者（实际发送在 ws_manager 中处理）
 		return err
 	}
 
@@ -117,16 +110,7 @@ func handleChatMessage(userId string, wsMsg WSMessage) error {
 		log.Printf("Error dispatching message: %v", err)
 	}
 
-	// 发送确认消息给发送者
-	ackMsg := map[string]interface{}{
-		"type":     "ack",
-		"msgId":    msgId,
-		"refMsgId": wsMsg.MsgId,
-		"status":   "sent",
-	}
-	
-	// 注意：这里需要通过ws_manager发送确认消息
-	// 由于循环依赖问题，实际发送会在ws_manager中处理
+	// 发送确认消息给发送者（实际发送在 ws_manager 中处理）
 	log.Printf("Message %s acknowledged", msgId)
 
 	return nil
@@ -147,7 +131,7 @@ func handleAck(userId string, wsMsg WSMessage) error {
 	}
 
 	log.Printf("User %s acknowledged message %s", userId, msgId)
-	
+
 	userIdInt, err := strconv.Atoi(userId)
 	if err != nil {
 		return err
@@ -262,16 +246,9 @@ func handleTyping(userId string, wsMsg WSMessage) error {
 
 	log.Printf("User %s typing status to user %d: %v", userId, toUserId, isTyping)
 
-	// 转发正在输入状态给接收者
-	typingMsg := map[string]interface{}{
-		"type":      "typing",
-		"fromUserId": userId,
-		"isTyping":  isTyping,
-	}
+	// 这里本应通过 ws_manager 转发正在输入状态给接收者
+	// 由于循环依赖问题，实际发送会在 ws_manager 中处理
 
-	// 注意：这里需要通过ws_manager发送
-	// 由于循环依赖问题，实际发送会在ws_manager中处理
-	
 	return nil
 }
 

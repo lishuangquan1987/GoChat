@@ -10,8 +10,11 @@ import '../providers/user_provider.dart';
 import '../providers/group_provider.dart';
 
 import '../widgets/optimized_message_list.dart';
+import '../widgets/emoji_picker.dart';
 import '../services/api_service.dart';
+import '../services/storage_service.dart';
 import '../services/message_dispatcher.dart';
+import 'login_page.dart';
 import '../utils/performance_monitor.dart';
 import '../utils/image_cache_manager.dart';
 import '../utils/desktop_notification.dart';
@@ -37,6 +40,7 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
   final PerformanceMonitor _performanceMonitor = PerformanceMonitor();
   final ImagePreloader _imagePreloader = ImagePreloader();
   bool _isLoading = false;
+  bool _showEmojiPicker = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -164,6 +168,34 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
   Future<void> _loadChatHistory() async {
     _performanceMonitor.startTimer('load_chat_history');
     setState(() => _isLoading = true);
+    
+    // 调试：检查token状态
+    final token = await StorageService.getToken();
+    print('DEBUG CHAT: Current token: $token');
+    if (token == null || token.isEmpty) {
+      print('DEBUG CHAT: No token found, user may need to re-login');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('认证已过期，请重新登录'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        // 延迟后跳转到登录页面
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/login',
+              (route) => false,
+            );
+          }
+        });
+      }
+      setState(() => _isLoading = false);
+      return;
+    }
+    
     try {
       final chatProvider = context.read<ChatProvider>();
       final page = chatProvider.getCurrentPage(widget.conversation.id);
@@ -210,10 +242,34 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
         }
       }
     } catch (e) {
+      print('DEBUG CHAT: Error loading chat history: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载聊天记录失败: $e')),
-        );
+        // 检查是否是401错误
+        if (e.toString().contains('401')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('认证已过期，请重新登录'),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: '重新登录',
+                textColor: Colors.white,
+                onPressed: () {
+                  // 清除用户状态并跳转到登录页面
+                  final userProvider = context.read<UserProvider>();
+                  userProvider.logout();
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                    (route) => false,
+                  );
+                },
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('加载聊天记录失败: $e')),
+          );
+        }
       }
     } finally {
       setState(() => _isLoading = false);

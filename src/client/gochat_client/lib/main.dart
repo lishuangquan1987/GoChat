@@ -102,6 +102,10 @@ class MyApp extends StatelessWidget {
             darkTheme: _buildTheme(settings, true),
             themeMode: _getThemeMode(settings.themeMode),
             home: const SplashPage(),
+            routes: {
+              '/login': (context) => const LoginPage(),
+              '/home': (context) => const HomePage(),
+            },
           );
         },
       ),

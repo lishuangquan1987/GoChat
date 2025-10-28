@@ -114,9 +114,28 @@ class DoNotDisturbService {
   Future<List<DoNotDisturbSetting>> getDoNotDisturbSettings() async {
     try {
       final response = await _dio.get('/donotdisturb/settings');
-      final List<dynamic> data = response.data['data'] as List<dynamic>;
-      return data.map((json) => DoNotDisturbSetting.fromJson(json)).toList();
+      
+      // 检查响应数据
+      if (response.data == null) {
+        print('DEBUG DND: Response data is null');
+        return [];
+      }
+      
+      final data = response.data['data'];
+      if (data == null) {
+        print('DEBUG DND: Data field is null, returning empty list');
+        return [];
+      }
+      
+      if (data is! List) {
+        print('DEBUG DND: Data is not a list: ${data.runtimeType}');
+        return [];
+      }
+      
+      final List<dynamic> dataList = data as List<dynamic>;
+      return dataList.map((json) => DoNotDisturbSetting.fromJson(json)).toList();
     } catch (e) {
+      print('DEBUG DND: Error getting settings: $e');
       throw Exception('获取免打扰设置失败: $e');
     }
   }
