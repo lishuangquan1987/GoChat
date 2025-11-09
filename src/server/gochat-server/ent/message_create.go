@@ -38,6 +38,34 @@ func (mc *MessageCreate) SetContent(s string) *MessageCreate {
 	return mc
 }
 
+// SetIsRevoked sets the "isRevoked" field.
+func (mc *MessageCreate) SetIsRevoked(b bool) *MessageCreate {
+	mc.mutation.SetIsRevoked(b)
+	return mc
+}
+
+// SetNillableIsRevoked sets the "isRevoked" field if the given value is not nil.
+func (mc *MessageCreate) SetNillableIsRevoked(b *bool) *MessageCreate {
+	if b != nil {
+		mc.SetIsRevoked(*b)
+	}
+	return mc
+}
+
+// SetRevokeTime sets the "revokeTime" field.
+func (mc *MessageCreate) SetRevokeTime(t time.Time) *MessageCreate {
+	mc.mutation.SetRevokeTime(t)
+	return mc
+}
+
+// SetNillableRevokeTime sets the "revokeTime" field if the given value is not nil.
+func (mc *MessageCreate) SetNillableRevokeTime(t *time.Time) *MessageCreate {
+	if t != nil {
+		mc.SetRevokeTime(*t)
+	}
+	return mc
+}
+
 // SetCreateTime sets the "createTime" field.
 func (mc *MessageCreate) SetCreateTime(t time.Time) *MessageCreate {
 	mc.mutation.SetCreateTime(t)
@@ -87,6 +115,10 @@ func (mc *MessageCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (mc *MessageCreate) defaults() {
+	if _, ok := mc.mutation.IsRevoked(); !ok {
+		v := message.DefaultIsRevoked
+		mc.mutation.SetIsRevoked(v)
+	}
 	if _, ok := mc.mutation.CreateTime(); !ok {
 		v := message.DefaultCreateTime()
 		mc.mutation.SetCreateTime(v)
@@ -118,6 +150,9 @@ func (mc *MessageCreate) check() error {
 		if err := message.ContentValidator(v); err != nil {
 			return &ValidationError{Name: "content", err: fmt.Errorf(`ent: validator failed for field "Message.content": %w`, err)}
 		}
+	}
+	if _, ok := mc.mutation.IsRevoked(); !ok {
+		return &ValidationError{Name: "isRevoked", err: errors.New(`ent: missing required field "Message.isRevoked"`)}
 	}
 	if _, ok := mc.mutation.CreateTime(); !ok {
 		return &ValidationError{Name: "createTime", err: errors.New(`ent: missing required field "Message.createTime"`)}
@@ -159,6 +194,14 @@ func (mc *MessageCreate) createSpec() (*Message, *sqlgraph.CreateSpec) {
 	if value, ok := mc.mutation.Content(); ok {
 		_spec.SetField(message.FieldContent, field.TypeString, value)
 		_node.Content = value
+	}
+	if value, ok := mc.mutation.IsRevoked(); ok {
+		_spec.SetField(message.FieldIsRevoked, field.TypeBool, value)
+		_node.IsRevoked = value
+	}
+	if value, ok := mc.mutation.RevokeTime(); ok {
+		_spec.SetField(message.FieldRevokeTime, field.TypeTime, value)
+		_node.RevokeTime = &value
 	}
 	if value, ok := mc.mutation.CreateTime(); ok {
 		_spec.SetField(message.FieldCreateTime, field.TypeTime, value)

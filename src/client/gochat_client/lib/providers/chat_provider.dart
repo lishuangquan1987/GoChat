@@ -389,6 +389,11 @@ class ChatProvider with ChangeNotifier {
     }
   }
 
+  /// 刷新会话列表
+  Future<void> refreshConversationList() async {
+    _debouncedNotify();
+  }
+
   /// 防抖通知，避免频繁的UI重建
   void _debouncedNotify() {
     if (_isNotifying) return;

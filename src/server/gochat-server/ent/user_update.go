@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"gochat_server/ent/predicate"
 	"gochat_server/ent/user"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -96,6 +97,126 @@ func (uu *UserUpdate) ClearSex() *UserUpdate {
 	return uu
 }
 
+// SetAvatar sets the "avatar" field.
+func (uu *UserUpdate) SetAvatar(s string) *UserUpdate {
+	uu.mutation.SetAvatar(s)
+	return uu
+}
+
+// SetNillableAvatar sets the "avatar" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableAvatar(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetAvatar(*s)
+	}
+	return uu
+}
+
+// ClearAvatar clears the value of the "avatar" field.
+func (uu *UserUpdate) ClearAvatar() *UserUpdate {
+	uu.mutation.ClearAvatar()
+	return uu
+}
+
+// SetSignature sets the "signature" field.
+func (uu *UserUpdate) SetSignature(s string) *UserUpdate {
+	uu.mutation.SetSignature(s)
+	return uu
+}
+
+// SetNillableSignature sets the "signature" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableSignature(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetSignature(*s)
+	}
+	return uu
+}
+
+// ClearSignature clears the value of the "signature" field.
+func (uu *UserUpdate) ClearSignature() *UserUpdate {
+	uu.mutation.ClearSignature()
+	return uu
+}
+
+// SetRegion sets the "region" field.
+func (uu *UserUpdate) SetRegion(s string) *UserUpdate {
+	uu.mutation.SetRegion(s)
+	return uu
+}
+
+// SetNillableRegion sets the "region" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableRegion(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetRegion(*s)
+	}
+	return uu
+}
+
+// ClearRegion clears the value of the "region" field.
+func (uu *UserUpdate) ClearRegion() *UserUpdate {
+	uu.mutation.ClearRegion()
+	return uu
+}
+
+// SetBirthday sets the "birthday" field.
+func (uu *UserUpdate) SetBirthday(t time.Time) *UserUpdate {
+	uu.mutation.SetBirthday(t)
+	return uu
+}
+
+// SetNillableBirthday sets the "birthday" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableBirthday(t *time.Time) *UserUpdate {
+	if t != nil {
+		uu.SetBirthday(*t)
+	}
+	return uu
+}
+
+// ClearBirthday clears the value of the "birthday" field.
+func (uu *UserUpdate) ClearBirthday() *UserUpdate {
+	uu.mutation.ClearBirthday()
+	return uu
+}
+
+// SetLastSeen sets the "lastSeen" field.
+func (uu *UserUpdate) SetLastSeen(t time.Time) *UserUpdate {
+	uu.mutation.SetLastSeen(t)
+	return uu
+}
+
+// SetNillableLastSeen sets the "lastSeen" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableLastSeen(t *time.Time) *UserUpdate {
+	if t != nil {
+		uu.SetLastSeen(*t)
+	}
+	return uu
+}
+
+// ClearLastSeen clears the value of the "lastSeen" field.
+func (uu *UserUpdate) ClearLastSeen() *UserUpdate {
+	uu.mutation.ClearLastSeen()
+	return uu
+}
+
+// SetStatus sets the "status" field.
+func (uu *UserUpdate) SetStatus(s string) *UserUpdate {
+	uu.mutation.SetStatus(s)
+	return uu
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableStatus(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetStatus(*s)
+	}
+	return uu
+}
+
+// ClearStatus clears the value of the "status" field.
+func (uu *UserUpdate) ClearStatus() *UserUpdate {
+	uu.mutation.ClearStatus()
+	return uu
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -177,6 +298,42 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if uu.mutation.SexCleared() {
 		_spec.ClearField(user.FieldSex, field.TypeInt)
+	}
+	if value, ok := uu.mutation.Avatar(); ok {
+		_spec.SetField(user.FieldAvatar, field.TypeString, value)
+	}
+	if uu.mutation.AvatarCleared() {
+		_spec.ClearField(user.FieldAvatar, field.TypeString)
+	}
+	if value, ok := uu.mutation.Signature(); ok {
+		_spec.SetField(user.FieldSignature, field.TypeString, value)
+	}
+	if uu.mutation.SignatureCleared() {
+		_spec.ClearField(user.FieldSignature, field.TypeString)
+	}
+	if value, ok := uu.mutation.Region(); ok {
+		_spec.SetField(user.FieldRegion, field.TypeString, value)
+	}
+	if uu.mutation.RegionCleared() {
+		_spec.ClearField(user.FieldRegion, field.TypeString)
+	}
+	if value, ok := uu.mutation.Birthday(); ok {
+		_spec.SetField(user.FieldBirthday, field.TypeTime, value)
+	}
+	if uu.mutation.BirthdayCleared() {
+		_spec.ClearField(user.FieldBirthday, field.TypeTime)
+	}
+	if value, ok := uu.mutation.LastSeen(); ok {
+		_spec.SetField(user.FieldLastSeen, field.TypeTime, value)
+	}
+	if uu.mutation.LastSeenCleared() {
+		_spec.ClearField(user.FieldLastSeen, field.TypeTime)
+	}
+	if value, ok := uu.mutation.Status(); ok {
+		_spec.SetField(user.FieldStatus, field.TypeString, value)
+	}
+	if uu.mutation.StatusCleared() {
+		_spec.ClearField(user.FieldStatus, field.TypeString)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -264,6 +421,126 @@ func (uuo *UserUpdateOne) AddSex(i int) *UserUpdateOne {
 // ClearSex clears the value of the "sex" field.
 func (uuo *UserUpdateOne) ClearSex() *UserUpdateOne {
 	uuo.mutation.ClearSex()
+	return uuo
+}
+
+// SetAvatar sets the "avatar" field.
+func (uuo *UserUpdateOne) SetAvatar(s string) *UserUpdateOne {
+	uuo.mutation.SetAvatar(s)
+	return uuo
+}
+
+// SetNillableAvatar sets the "avatar" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableAvatar(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetAvatar(*s)
+	}
+	return uuo
+}
+
+// ClearAvatar clears the value of the "avatar" field.
+func (uuo *UserUpdateOne) ClearAvatar() *UserUpdateOne {
+	uuo.mutation.ClearAvatar()
+	return uuo
+}
+
+// SetSignature sets the "signature" field.
+func (uuo *UserUpdateOne) SetSignature(s string) *UserUpdateOne {
+	uuo.mutation.SetSignature(s)
+	return uuo
+}
+
+// SetNillableSignature sets the "signature" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableSignature(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetSignature(*s)
+	}
+	return uuo
+}
+
+// ClearSignature clears the value of the "signature" field.
+func (uuo *UserUpdateOne) ClearSignature() *UserUpdateOne {
+	uuo.mutation.ClearSignature()
+	return uuo
+}
+
+// SetRegion sets the "region" field.
+func (uuo *UserUpdateOne) SetRegion(s string) *UserUpdateOne {
+	uuo.mutation.SetRegion(s)
+	return uuo
+}
+
+// SetNillableRegion sets the "region" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableRegion(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetRegion(*s)
+	}
+	return uuo
+}
+
+// ClearRegion clears the value of the "region" field.
+func (uuo *UserUpdateOne) ClearRegion() *UserUpdateOne {
+	uuo.mutation.ClearRegion()
+	return uuo
+}
+
+// SetBirthday sets the "birthday" field.
+func (uuo *UserUpdateOne) SetBirthday(t time.Time) *UserUpdateOne {
+	uuo.mutation.SetBirthday(t)
+	return uuo
+}
+
+// SetNillableBirthday sets the "birthday" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableBirthday(t *time.Time) *UserUpdateOne {
+	if t != nil {
+		uuo.SetBirthday(*t)
+	}
+	return uuo
+}
+
+// ClearBirthday clears the value of the "birthday" field.
+func (uuo *UserUpdateOne) ClearBirthday() *UserUpdateOne {
+	uuo.mutation.ClearBirthday()
+	return uuo
+}
+
+// SetLastSeen sets the "lastSeen" field.
+func (uuo *UserUpdateOne) SetLastSeen(t time.Time) *UserUpdateOne {
+	uuo.mutation.SetLastSeen(t)
+	return uuo
+}
+
+// SetNillableLastSeen sets the "lastSeen" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableLastSeen(t *time.Time) *UserUpdateOne {
+	if t != nil {
+		uuo.SetLastSeen(*t)
+	}
+	return uuo
+}
+
+// ClearLastSeen clears the value of the "lastSeen" field.
+func (uuo *UserUpdateOne) ClearLastSeen() *UserUpdateOne {
+	uuo.mutation.ClearLastSeen()
+	return uuo
+}
+
+// SetStatus sets the "status" field.
+func (uuo *UserUpdateOne) SetStatus(s string) *UserUpdateOne {
+	uuo.mutation.SetStatus(s)
+	return uuo
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableStatus(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetStatus(*s)
+	}
+	return uuo
+}
+
+// ClearStatus clears the value of the "status" field.
+func (uuo *UserUpdateOne) ClearStatus() *UserUpdateOne {
+	uuo.mutation.ClearStatus()
 	return uuo
 }
 
@@ -378,6 +655,42 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if uuo.mutation.SexCleared() {
 		_spec.ClearField(user.FieldSex, field.TypeInt)
+	}
+	if value, ok := uuo.mutation.Avatar(); ok {
+		_spec.SetField(user.FieldAvatar, field.TypeString, value)
+	}
+	if uuo.mutation.AvatarCleared() {
+		_spec.ClearField(user.FieldAvatar, field.TypeString)
+	}
+	if value, ok := uuo.mutation.Signature(); ok {
+		_spec.SetField(user.FieldSignature, field.TypeString, value)
+	}
+	if uuo.mutation.SignatureCleared() {
+		_spec.ClearField(user.FieldSignature, field.TypeString)
+	}
+	if value, ok := uuo.mutation.Region(); ok {
+		_spec.SetField(user.FieldRegion, field.TypeString, value)
+	}
+	if uuo.mutation.RegionCleared() {
+		_spec.ClearField(user.FieldRegion, field.TypeString)
+	}
+	if value, ok := uuo.mutation.Birthday(); ok {
+		_spec.SetField(user.FieldBirthday, field.TypeTime, value)
+	}
+	if uuo.mutation.BirthdayCleared() {
+		_spec.ClearField(user.FieldBirthday, field.TypeTime)
+	}
+	if value, ok := uuo.mutation.LastSeen(); ok {
+		_spec.SetField(user.FieldLastSeen, field.TypeTime, value)
+	}
+	if uuo.mutation.LastSeenCleared() {
+		_spec.ClearField(user.FieldLastSeen, field.TypeTime)
+	}
+	if value, ok := uuo.mutation.Status(); ok {
+		_spec.SetField(user.FieldStatus, field.TypeString, value)
+	}
+	if uuo.mutation.StatusCleared() {
+		_spec.ClearField(user.FieldStatus, field.TypeString)
 	}
 	_node = &User{config: uuo.config}
 	_spec.Assign = _node.assignValues

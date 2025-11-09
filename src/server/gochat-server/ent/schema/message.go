@@ -19,6 +19,8 @@ func (Message) Fields() []ent.Field {
 		field.String("msgId").NotEmpty().Comment("消息ID,由发送者产生"),
 		field.String("msgType").NotEmpty().Comment("消息类型: text/image/video 或数值枚举"),
 		field.String("content").NotEmpty().Comment("消息内容(冗余存储,便于快速列表展示)"),
+		field.Bool("isRevoked").Default(false).Comment("是否已撤回"),
+		field.Time("revokeTime").Optional().Nillable().Comment("撤回时间"),
 		field.Time("createTime").Default(time.Now).Comment("创建时间"),
 	}
 }
@@ -27,3 +29,4 @@ func (Message) Fields() []ent.Field {
 func (Message) Edges() []ent.Edge {
 	return nil
 }
+

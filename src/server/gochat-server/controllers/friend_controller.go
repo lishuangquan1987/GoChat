@@ -297,3 +297,91 @@ func DeleteFriend(c *gin.Context) {
 		Data:    nil,
 	})
 }
+
+// UpdateFriendRemark 更新好友备注
+func UpdateFriendRemark(c *gin.Context) {
+	userID, ok := middlewares.GetUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
+			Code:    401,
+			Message: "未授权",
+		})
+		return
+	}
+
+	friendIdStr := c.Param("friendId")
+	friendId, err := strconv.Atoi(friendIdStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Code:    400,
+			Message: "无效的好友ID",
+		})
+		return
+	}
+
+	var parameter struct {
+		RemarkName *string  `json:"remarkName"`
+		Category   *string  `json:"category"`
+		Tags       []string `json:"tags"`
+	}
+
+	if err := c.ShouldBindJSON(&parameter); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Code:    400,
+			Message: "参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	err = services.UpdateFriendRemark(userID, friendId, parameter.RemarkName, parameter.Category, parameter.Tags)
+	if err != nil {
+		c.JSON(http.StatusOK, dto.ErrorResponse{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.Response{
+		Code:    0,
+		Message: "更新成功",
+		Data:    nil,
+	})
+}
+
+// GetFriendWithRemark 获取带备注的好友信息
+func GetFriendWithRemark(c *gin.Context) {
+	userID, ok := middlewares.GetUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
+			Code:    401,
+			Message: "未授权",
+		})
+		return
+	}
+
+	friendIdStr := c.Param("friendId")
+	friendId, err := strconv.Atoi(friendIdStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Code:    400,
+			Message: "无效的好友ID",
+		})
+		return
+	}
+
+	result, err := services.GetFriendWithRemark(userID, friendId)
+	if err != nil {
+		c.JSON(http.StatusOK, dto.ErrorResponse{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.Response{
+		Code:    0,
+		Message: "获取成功",
+		Data:    result,
+	})
+}

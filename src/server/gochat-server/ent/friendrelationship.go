@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"gochat_server/ent/friendrelationship"
 	"strings"
@@ -19,7 +20,13 @@ type FriendRelationship struct {
 	// 用户ID
 	UserId int `json:"userId,omitempty"`
 	// 好友ID
-	FriendId     int `json:"friendId,omitempty"`
+	FriendId int `json:"friendId,omitempty"`
+	// 备注名
+	RemarkName string `json:"remarkName,omitempty"`
+	// 好友分组
+	Category string `json:"category,omitempty"`
+	// 好友标签
+	Tags         []string `json:"tags,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -28,8 +35,12 @@ func (*FriendRelationship) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case friendrelationship.FieldTags:
+			values[i] = new([]byte)
 		case friendrelationship.FieldID, friendrelationship.FieldUserId, friendrelationship.FieldFriendId:
 			values[i] = new(sql.NullInt64)
+		case friendrelationship.FieldRemarkName, friendrelationship.FieldCategory:
+			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -62,6 +73,26 @@ func (fr *FriendRelationship) assignValues(columns []string, values []any) error
 				return fmt.Errorf("unexpected type %T for field friendId", values[i])
 			} else if value.Valid {
 				fr.FriendId = int(value.Int64)
+			}
+		case friendrelationship.FieldRemarkName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field remarkName", values[i])
+			} else if value.Valid {
+				fr.RemarkName = value.String
+			}
+		case friendrelationship.FieldCategory:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field category", values[i])
+			} else if value.Valid {
+				fr.Category = value.String
+			}
+		case friendrelationship.FieldTags:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field tags", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &fr.Tags); err != nil {
+					return fmt.Errorf("unmarshal field tags: %w", err)
+				}
 			}
 		default:
 			fr.selectValues.Set(columns[i], values[i])
@@ -104,6 +135,15 @@ func (fr *FriendRelationship) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("friendId=")
 	builder.WriteString(fmt.Sprintf("%v", fr.FriendId))
+	builder.WriteString(", ")
+	builder.WriteString("remarkName=")
+	builder.WriteString(fr.RemarkName)
+	builder.WriteString(", ")
+	builder.WriteString("category=")
+	builder.WriteString(fr.Category)
+	builder.WriteString(", ")
+	builder.WriteString("tags=")
+	builder.WriteString(fmt.Sprintf("%v", fr.Tags))
 	builder.WriteByte(')')
 	return builder.String()
 }

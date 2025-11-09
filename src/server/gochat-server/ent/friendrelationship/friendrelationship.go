@@ -15,6 +15,12 @@ const (
 	FieldUserId = "user_id"
 	// FieldFriendId holds the string denoting the friendid field in the database.
 	FieldFriendId = "friend_id"
+	// FieldRemarkName holds the string denoting the remarkname field in the database.
+	FieldRemarkName = "remark_name"
+	// FieldCategory holds the string denoting the category field in the database.
+	FieldCategory = "category"
+	// FieldTags holds the string denoting the tags field in the database.
+	FieldTags = "tags"
 	// Table holds the table name of the friendrelationship in the database.
 	Table = "friend_relationships"
 )
@@ -24,6 +30,9 @@ var Columns = []string{
 	FieldID,
 	FieldUserId,
 	FieldFriendId,
+	FieldRemarkName,
+	FieldCategory,
+	FieldTags,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -52,4 +61,14 @@ func ByUserId(opts ...sql.OrderTermOption) OrderOption {
 // ByFriendId orders the results by the friendId field.
 func ByFriendId(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFriendId, opts...).ToFunc()
+}
+
+// ByRemarkName orders the results by the remarkName field.
+func ByRemarkName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRemarkName, opts...).ToFunc()
+}
+
+// ByCategory orders the results by the category field.
+func ByCategory(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCategory, opts...).ToFunc()
 }

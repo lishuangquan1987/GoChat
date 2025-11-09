@@ -6,6 +6,7 @@ import '../models/user.dart';
 import 'login_page.dart';
 import 'settings_page.dart';
 import 'user_switcher_page.dart';
+import 'profile_edit_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -126,6 +127,22 @@ class ProfilePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('我的'),
         backgroundColor: const Color(0xFF07C160),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfileEditPage(),
+                ),
+              ).then((_) {
+                // 刷新页面数据
+                userProvider.refreshUser();
+              });
+            },
+          ),
+        ],
       ),
       body: ListView(
         children: [
@@ -137,18 +154,31 @@ class ProfilePage extends StatelessWidget {
                 CircleAvatar(
                   radius: 50,
                   backgroundColor: const Color(0xFF07C160),
-                  child: Text(
-                    user?.nickname.isNotEmpty == true 
-                        ? user!.nickname.substring(0, 1).toUpperCase()
-                        : 'U',
-                    style: const TextStyle(fontSize: 32, color: Colors.white),
-                  ),
+                  backgroundImage: user?.avatar != null && user!.avatar!.isNotEmpty
+                      ? NetworkImage(user.avatar!)
+                      : null,
+                  child: user?.avatar == null || user!.avatar!.isEmpty
+                      ? Text(
+                          user?.nickname.isNotEmpty == true 
+                              ? user!.nickname.substring(0, 1).toUpperCase()
+                              : 'U',
+                          style: const TextStyle(fontSize: 32, color: Colors.white),
+                        )
+                      : null,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   user?.nickname ?? 'Unknown',
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
+                if (user?.signature != null && user!.signature!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    user.signature!,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Text(
                   'ID: ${user?.id ?? 0}',
@@ -159,6 +189,30 @@ class ProfilePage extends StatelessWidget {
                   '用户名: ${user?.username ?? 'Unknown'}',
                   style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
+                if (user?.status != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: user!.isOnline ? Colors.green : Colors.grey,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        user.statusText,
+                        style: TextStyle(
+                          color: user.isOnline ? Colors.green : Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -186,6 +240,37 @@ class ProfilePage extends StatelessWidget {
             title: const Text('性别'),
             subtitle: Text(user?.sex == 0 ? '男' : user?.sex == 1 ? '女' : '未知'),
           ),
+          const Divider(height: 1, indent: 56),
+          if (user?.signature != null && user!.signature!.isNotEmpty)
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('个人签名'),
+              subtitle: Text(user.signature!),
+            ),
+          if (user?.signature != null && user!.signature!.isNotEmpty)
+            const Divider(height: 1, indent: 56),
+          if (user?.region != null && user!.region!.isNotEmpty)
+            ListTile(
+              leading: const Icon(Icons.location_on_outlined),
+              title: const Text('地区'),
+              subtitle: Text(user.region!),
+            ),
+          if (user?.region != null && user!.region!.isNotEmpty)
+            const Divider(height: 1, indent: 56),
+          if (user?.birthday != null)
+            ListTile(
+              leading: const Icon(Icons.cake_outlined),
+              title: const Text('生日'),
+              subtitle: Text(user!.formattedBirthday),
+            ),
+          if (user?.birthday != null)
+            const Divider(height: 1, indent: 56),
+          if (user?.lastSeen != null)
+            ListTile(
+              leading: const Icon(Icons.access_time),
+              title: const Text('最后在线'),
+              subtitle: Text(user!.formattedLastSeen),
+            ),
           
           const SizedBox(height: 20),
           const Divider(height: 1),

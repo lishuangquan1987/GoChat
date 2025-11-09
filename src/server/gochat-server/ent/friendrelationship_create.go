@@ -31,6 +31,40 @@ func (frc *FriendRelationshipCreate) SetFriendId(i int) *FriendRelationshipCreat
 	return frc
 }
 
+// SetRemarkName sets the "remarkName" field.
+func (frc *FriendRelationshipCreate) SetRemarkName(s string) *FriendRelationshipCreate {
+	frc.mutation.SetRemarkName(s)
+	return frc
+}
+
+// SetNillableRemarkName sets the "remarkName" field if the given value is not nil.
+func (frc *FriendRelationshipCreate) SetNillableRemarkName(s *string) *FriendRelationshipCreate {
+	if s != nil {
+		frc.SetRemarkName(*s)
+	}
+	return frc
+}
+
+// SetCategory sets the "category" field.
+func (frc *FriendRelationshipCreate) SetCategory(s string) *FriendRelationshipCreate {
+	frc.mutation.SetCategory(s)
+	return frc
+}
+
+// SetNillableCategory sets the "category" field if the given value is not nil.
+func (frc *FriendRelationshipCreate) SetNillableCategory(s *string) *FriendRelationshipCreate {
+	if s != nil {
+		frc.SetCategory(*s)
+	}
+	return frc
+}
+
+// SetTags sets the "tags" field.
+func (frc *FriendRelationshipCreate) SetTags(s []string) *FriendRelationshipCreate {
+	frc.mutation.SetTags(s)
+	return frc
+}
+
 // Mutation returns the FriendRelationshipMutation object of the builder.
 func (frc *FriendRelationshipCreate) Mutation() *FriendRelationshipMutation {
 	return frc.mutation
@@ -104,6 +138,18 @@ func (frc *FriendRelationshipCreate) createSpec() (*FriendRelationship, *sqlgrap
 	if value, ok := frc.mutation.FriendId(); ok {
 		_spec.SetField(friendrelationship.FieldFriendId, field.TypeInt, value)
 		_node.FriendId = value
+	}
+	if value, ok := frc.mutation.RemarkName(); ok {
+		_spec.SetField(friendrelationship.FieldRemarkName, field.TypeString, value)
+		_node.RemarkName = value
+	}
+	if value, ok := frc.mutation.Category(); ok {
+		_spec.SetField(friendrelationship.FieldCategory, field.TypeString, value)
+		_node.Category = value
+	}
+	if value, ok := frc.mutation.Tags(); ok {
+		_spec.SetField(friendrelationship.FieldTags, field.TypeJSON, value)
+		_node.Tags = value
 	}
 	return _node, _spec
 }

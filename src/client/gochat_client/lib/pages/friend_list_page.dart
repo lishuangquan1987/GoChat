@@ -5,8 +5,10 @@ import '../providers/chat_provider.dart';
 import '../services/api_service.dart';
 import '../models/user.dart';
 import '../models/friend_request.dart';
+import '../models/friend_remark.dart';
 import 'friend_requests_page.dart';
 import 'chat_page.dart';
+import 'friend_detail_page.dart';
 
 class FriendListPage extends StatefulWidget {
   const FriendListPage({super.key});
@@ -171,6 +173,14 @@ class _FriendListPageState extends State<FriendListPage> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('编辑备注'),
+              onTap: () {
+                Navigator.pop(context);
+                _showFriendDetail(friend);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
               title: const Text('删除好友', style: TextStyle(color: Colors.red)),
               onTap: () {
@@ -182,6 +192,18 @@ class _FriendListPageState extends State<FriendListPage> {
         ),
       ),
     );
+  }
+
+  void _showFriendDetail(User friend) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FriendDetailPage(friend: friend),
+      ),
+    ).then((_) {
+      // 刷新好友列表
+      _loadFriends();
+    });
   }
 
   void _confirmDeleteFriend(User friend) {
@@ -222,6 +244,25 @@ class _FriendListPageState extends State<FriendListPage> {
         ),
       ),
     );
+  }
+
+  Future<Map<String, dynamic>> _getFriendDisplayInfo(int friendId) async {
+    try {
+      final response = await _apiService.getFriendWithRemark(friendId);
+      if (response.data['code'] == 0) {
+        final data = response.data['data'] as Map<String, dynamic>;
+        final friendData = data['friend'] as Map<String, dynamic>;
+        final remarkData = data['remark'] as Map<String, dynamic>?;
+        final remarkName = remarkData?['remarkName'] as String?;
+        final nickname = friendData['nickname'] as String? ?? '';
+        return {
+          'displayName': remarkName?.isNotEmpty == true ? remarkName! : nickname,
+        };
+      }
+    } catch (e) {
+      debugPrint('Error loading friend display info: $e');
+    }
+    return {};
   }
 
   Future<void> _deleteFriend(int friendId) async {
@@ -373,16 +414,38 @@ class _FriendListPageState extends State<FriendListPage> {
                         return ListTile(
                           leading: CircleAvatar(
                             backgroundColor: const Color(0xFF07C160),
-                            child: Text(
-                              friend.nickname.isNotEmpty 
-                                ? friend.nickname[0].toUpperCase()
-                                : 'U',
-                              style: const TextStyle(color: Colors.white),
-                            ),
+                            backgroundImage: friend.avatar != null && friend.avatar!.isNotEmpty
+                                ? NetworkImage(friend.avatar!)
+                                : null,
+                            child: friend.avatar == null || friend.avatar!.isEmpty
+                                ? Text(
+                                    friend.nickname.isNotEmpty 
+                                      ? friend.nickname[0].toUpperCase()
+                                      : 'U',
+                                    style: const TextStyle(color: Colors.white),
+                                  )
+                                : null,
                           ),
-                          title: Text(friend.nickname),
+                          title: FutureBuilder<Map<String, dynamic>>(
+                            future: _getFriendDisplayInfo(friend.id),
+                            builder: (context, snapshot) {
+                              final displayName = snapshot.data?['displayName'] as String? ?? friend.nickname;
+                              return Text(displayName);
+                            },
+                          ),
                           subtitle: Text('ID: ${friend.id}'),
+                          trailing: friend.status != null
+                              ? Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: friend.isOnline ? Colors.green : Colors.grey,
+                                    shape: BoxShape.circle,
+                                  ),
+                                )
+                              : null,
                           onTap: () => _showFriendOptions(friend),
+                          onLongPress: () => _showFriendDetail(friend),
                         );
                       },
                     ),

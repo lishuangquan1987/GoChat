@@ -11,6 +11,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 )
 
@@ -69,6 +70,64 @@ func (fru *FriendRelationshipUpdate) AddFriendId(i int) *FriendRelationshipUpdat
 	return fru
 }
 
+// SetRemarkName sets the "remarkName" field.
+func (fru *FriendRelationshipUpdate) SetRemarkName(s string) *FriendRelationshipUpdate {
+	fru.mutation.SetRemarkName(s)
+	return fru
+}
+
+// SetNillableRemarkName sets the "remarkName" field if the given value is not nil.
+func (fru *FriendRelationshipUpdate) SetNillableRemarkName(s *string) *FriendRelationshipUpdate {
+	if s != nil {
+		fru.SetRemarkName(*s)
+	}
+	return fru
+}
+
+// ClearRemarkName clears the value of the "remarkName" field.
+func (fru *FriendRelationshipUpdate) ClearRemarkName() *FriendRelationshipUpdate {
+	fru.mutation.ClearRemarkName()
+	return fru
+}
+
+// SetCategory sets the "category" field.
+func (fru *FriendRelationshipUpdate) SetCategory(s string) *FriendRelationshipUpdate {
+	fru.mutation.SetCategory(s)
+	return fru
+}
+
+// SetNillableCategory sets the "category" field if the given value is not nil.
+func (fru *FriendRelationshipUpdate) SetNillableCategory(s *string) *FriendRelationshipUpdate {
+	if s != nil {
+		fru.SetCategory(*s)
+	}
+	return fru
+}
+
+// ClearCategory clears the value of the "category" field.
+func (fru *FriendRelationshipUpdate) ClearCategory() *FriendRelationshipUpdate {
+	fru.mutation.ClearCategory()
+	return fru
+}
+
+// SetTags sets the "tags" field.
+func (fru *FriendRelationshipUpdate) SetTags(s []string) *FriendRelationshipUpdate {
+	fru.mutation.SetTags(s)
+	return fru
+}
+
+// AppendTags appends s to the "tags" field.
+func (fru *FriendRelationshipUpdate) AppendTags(s []string) *FriendRelationshipUpdate {
+	fru.mutation.AppendTags(s)
+	return fru
+}
+
+// ClearTags clears the value of the "tags" field.
+func (fru *FriendRelationshipUpdate) ClearTags() *FriendRelationshipUpdate {
+	fru.mutation.ClearTags()
+	return fru
+}
+
 // Mutation returns the FriendRelationshipMutation object of the builder.
 func (fru *FriendRelationshipUpdate) Mutation() *FriendRelationshipMutation {
 	return fru.mutation
@@ -121,6 +180,29 @@ func (fru *FriendRelationshipUpdate) sqlSave(ctx context.Context) (n int, err er
 	}
 	if value, ok := fru.mutation.AddedFriendId(); ok {
 		_spec.AddField(friendrelationship.FieldFriendId, field.TypeInt, value)
+	}
+	if value, ok := fru.mutation.RemarkName(); ok {
+		_spec.SetField(friendrelationship.FieldRemarkName, field.TypeString, value)
+	}
+	if fru.mutation.RemarkNameCleared() {
+		_spec.ClearField(friendrelationship.FieldRemarkName, field.TypeString)
+	}
+	if value, ok := fru.mutation.Category(); ok {
+		_spec.SetField(friendrelationship.FieldCategory, field.TypeString, value)
+	}
+	if fru.mutation.CategoryCleared() {
+		_spec.ClearField(friendrelationship.FieldCategory, field.TypeString)
+	}
+	if value, ok := fru.mutation.Tags(); ok {
+		_spec.SetField(friendrelationship.FieldTags, field.TypeJSON, value)
+	}
+	if value, ok := fru.mutation.AppendedTags(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, friendrelationship.FieldTags, value)
+		})
+	}
+	if fru.mutation.TagsCleared() {
+		_spec.ClearField(friendrelationship.FieldTags, field.TypeJSON)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, fru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -181,6 +263,64 @@ func (fruo *FriendRelationshipUpdateOne) SetNillableFriendId(i *int) *FriendRela
 // AddFriendId adds i to the "friendId" field.
 func (fruo *FriendRelationshipUpdateOne) AddFriendId(i int) *FriendRelationshipUpdateOne {
 	fruo.mutation.AddFriendId(i)
+	return fruo
+}
+
+// SetRemarkName sets the "remarkName" field.
+func (fruo *FriendRelationshipUpdateOne) SetRemarkName(s string) *FriendRelationshipUpdateOne {
+	fruo.mutation.SetRemarkName(s)
+	return fruo
+}
+
+// SetNillableRemarkName sets the "remarkName" field if the given value is not nil.
+func (fruo *FriendRelationshipUpdateOne) SetNillableRemarkName(s *string) *FriendRelationshipUpdateOne {
+	if s != nil {
+		fruo.SetRemarkName(*s)
+	}
+	return fruo
+}
+
+// ClearRemarkName clears the value of the "remarkName" field.
+func (fruo *FriendRelationshipUpdateOne) ClearRemarkName() *FriendRelationshipUpdateOne {
+	fruo.mutation.ClearRemarkName()
+	return fruo
+}
+
+// SetCategory sets the "category" field.
+func (fruo *FriendRelationshipUpdateOne) SetCategory(s string) *FriendRelationshipUpdateOne {
+	fruo.mutation.SetCategory(s)
+	return fruo
+}
+
+// SetNillableCategory sets the "category" field if the given value is not nil.
+func (fruo *FriendRelationshipUpdateOne) SetNillableCategory(s *string) *FriendRelationshipUpdateOne {
+	if s != nil {
+		fruo.SetCategory(*s)
+	}
+	return fruo
+}
+
+// ClearCategory clears the value of the "category" field.
+func (fruo *FriendRelationshipUpdateOne) ClearCategory() *FriendRelationshipUpdateOne {
+	fruo.mutation.ClearCategory()
+	return fruo
+}
+
+// SetTags sets the "tags" field.
+func (fruo *FriendRelationshipUpdateOne) SetTags(s []string) *FriendRelationshipUpdateOne {
+	fruo.mutation.SetTags(s)
+	return fruo
+}
+
+// AppendTags appends s to the "tags" field.
+func (fruo *FriendRelationshipUpdateOne) AppendTags(s []string) *FriendRelationshipUpdateOne {
+	fruo.mutation.AppendTags(s)
+	return fruo
+}
+
+// ClearTags clears the value of the "tags" field.
+func (fruo *FriendRelationshipUpdateOne) ClearTags() *FriendRelationshipUpdateOne {
+	fruo.mutation.ClearTags()
 	return fruo
 }
 
@@ -266,6 +406,29 @@ func (fruo *FriendRelationshipUpdateOne) sqlSave(ctx context.Context) (_node *Fr
 	}
 	if value, ok := fruo.mutation.AddedFriendId(); ok {
 		_spec.AddField(friendrelationship.FieldFriendId, field.TypeInt, value)
+	}
+	if value, ok := fruo.mutation.RemarkName(); ok {
+		_spec.SetField(friendrelationship.FieldRemarkName, field.TypeString, value)
+	}
+	if fruo.mutation.RemarkNameCleared() {
+		_spec.ClearField(friendrelationship.FieldRemarkName, field.TypeString)
+	}
+	if value, ok := fruo.mutation.Category(); ok {
+		_spec.SetField(friendrelationship.FieldCategory, field.TypeString, value)
+	}
+	if fruo.mutation.CategoryCleared() {
+		_spec.ClearField(friendrelationship.FieldCategory, field.TypeString)
+	}
+	if value, ok := fruo.mutation.Tags(); ok {
+		_spec.SetField(friendrelationship.FieldTags, field.TypeJSON, value)
+	}
+	if value, ok := fruo.mutation.AppendedTags(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, friendrelationship.FieldTags, value)
+		})
+	}
+	if fruo.mutation.TagsCleared() {
+		_spec.ClearField(friendrelationship.FieldTags, field.TypeJSON)
 	}
 	_node = &FriendRelationship{config: fruo.config}
 	_spec.Assign = _node.assignValues

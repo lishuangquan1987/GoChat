@@ -366,3 +366,86 @@ func SendFriendRequestNotification(request *ent.FriendRequest) error {
 	// 发送通知给接收者
 	return SendNotificationToUser(strconv.Itoa(request.ToUserId), notification)
 }
+
+// UpdateFriendRemark 更新好友备注
+func UpdateFriendRemark(userId, friendId int, remarkName *string, category *string, tags []string) error {
+	// 检查是否是好友关系
+	isFriend, err := IsFriend(userId, friendId)
+	if err != nil {
+		return err
+	}
+	if !isFriend {
+		return errors.New("不是好友关系")
+	}
+
+	// 查询好友关系
+	relationship, err := db.FriendRelationship.Query().
+		Where(
+			friendrelationship.UserId(userId),
+			friendrelationship.FriendId(friendId),
+		).
+		First(context.TODO())
+	if err != nil {
+		return errors.New("好友关系不存在")
+	}
+
+	// 更新备注信息
+	update := db.FriendRelationship.UpdateOneID(relationship.ID)
+	if remarkName != nil {
+		update = update.SetRemarkName(*remarkName)
+	}
+	if category != nil {
+		update = update.SetCategory(*category)
+	}
+	if tags != nil {
+		update = update.SetTags(tags)
+	}
+
+	_, err = update.Save(context.TODO())
+	if err != nil {
+		return errors.New("更新好友备注失败")
+	}
+
+	// 使好友列表缓存失效
+	_ = InvalidateFriendListCache(userId)
+
+	return nil
+}
+
+// GetFriendWithRemark 获取带备注的好友信息
+func GetFriendWithRemark(userId, friendId int) (map[string]interface{}, error) {
+	// 检查是否是好友关系
+	isFriend, err := IsFriend(userId, friendId)
+	if err != nil {
+		return nil, err
+	}
+	if !isFriend {
+		return nil, errors.New("不是好友关系")
+	}
+
+	// 查询好友关系
+	relationship, err := db.FriendRelationship.Query().
+		Where(
+			friendrelationship.UserId(userId),
+			friendrelationship.FriendId(friendId),
+		).
+		First(context.TODO())
+	if err != nil {
+		return nil, errors.New("好友关系不存在")
+	}
+
+	// 查询好友用户信息
+	friend, err := db.User.Get(context.TODO(), friendId)
+	if err != nil {
+		return nil, errors.New("好友不存在")
+	}
+
+	result := map[string]interface{}{
+		"friend":     friend,
+		"remarkName": relationship.RemarkName,
+		"category":   relationship.Category,
+		"tags":       relationship.Tags,
+	}
+
+	return result, nil
+}

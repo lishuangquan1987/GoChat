@@ -385,6 +385,77 @@ func MarkMessageRead(c *gin.Context) {
 	})
 }
 
+// RecallMessage 撤回消息
+func RecallMessage(c *gin.Context) {
+	userID, ok := middlewares.GetUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
+			Code:    401,
+			Message: "未授权",
+		})
+		return
+	}
+
+	var parameter struct {
+		MsgId string `json:"msgId" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&parameter); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Code:    400,
+			Message: "参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	// 撤回消息
+	messageDetail, err := services.RecallMessage(parameter.MsgId, userID)
+	if err != nil {
+		c.JSON(http.StatusOK, dto.ErrorResponse{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	// 通过WebSocket通知相关用户消息已撤回
+	go func() {
+		if messageDetail.IsGroup && messageDetail.GroupId != nil {
+			// 群聊消息：通知所有群成员
+			members, err := services.GetGroupMembers(*messageDetail.GroupId)
+			if err == nil {
+				recallNotification := map[string]interface{}{
+					"type": "message_recalled",
+					"data": map[string]interface{}{
+						"msgId":   parameter.MsgId,
+						"groupId": *messageDetail.GroupId,
+					},
+				}
+				for _, member := range members {
+					wsmanager.SendMessageToUser(strconv.Itoa(member.ID), recallNotification)
+				}
+			}
+		} else {
+			// 私聊消息：通知接收者
+			recallNotification := map[string]interface{}{
+				"type": "message_recalled",
+				"data": map[string]interface{}{
+					"msgId":     parameter.MsgId,
+					"fromUserId": messageDetail.FromUserId,
+					"toUserId":   messageDetail.ToUserId,
+				},
+			}
+			wsmanager.SendMessageToUser(strconv.Itoa(messageDetail.ToUserId), recallNotification)
+		}
+	}()
+
+	c.JSON(http.StatusOK, dto.Response{
+		Code:    0,
+		Message: "撤回成功",
+		Data:    nil,
+	})
+}
+
 // GetMessageStatus 获取消息状态
 func GetMessageStatus(c *gin.Context) {
 	userID, ok := middlewares.GetUserID(c)
@@ -425,5 +496,93 @@ func GetMessageStatus(c *gin.Context) {
 			"deliveredTime": status.DeliveredTime,
 			"readTime":      status.ReadTime,
 		},
+	})
+}
+
+// GetUnreadMessageCount 获取未读消息数
+func GetUnreadMessageCount(c *gin.Context) {
+	userID, ok := middlewares.GetUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
+			Code:    401,
+			Message: "未授权",
+		})
+		return
+	}
+
+	friendIdStr := c.DefaultQuery("friendId", "0")
+	friendId := 0
+	if friendIdStr != "0" {
+		if id, err := strconv.Atoi(friendIdStr); err == nil {
+			friendId = id
+		}
+	}
+
+	groupIdStr := c.DefaultQuery("groupId", "")
+	var groupId *int
+	if groupIdStr != "" {
+		if id, err := strconv.Atoi(groupIdStr); err == nil {
+			groupId = &id
+		}
+	}
+
+	count, err := services.GetUnreadMessageCount(userID, friendId, groupId)
+	if err != nil {
+		c.JSON(http.StatusOK, dto.ErrorResponse{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.Response{
+		Code:    0,
+		Message: "获取成功",
+		Data: map[string]interface{}{
+			"unreadCount": count,
+		},
+	})
+}
+
+// MarkAllMessagesAsRead 标记所有消息为已读
+func MarkAllMessagesAsRead(c *gin.Context) {
+	userID, ok := middlewares.GetUserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, dto.ErrorResponse{
+			Code:    401,
+			Message: "未授权",
+		})
+		return
+	}
+
+	friendIdStr := c.DefaultQuery("friendId", "")
+	var friendId *int
+	if friendIdStr != "" {
+		if id, err := strconv.Atoi(friendIdStr); err == nil {
+			friendId = &id
+		}
+	}
+
+	groupIdStr := c.DefaultQuery("groupId", "")
+	var groupId *int
+	if groupIdStr != "" {
+		if id, err := strconv.Atoi(groupIdStr); err == nil {
+			groupId = &id
+		}
+	}
+
+	err := services.MarkAllMessagesAsRead(userID, friendId, groupId)
+	if err != nil {
+		c.JSON(http.StatusOK, dto.ErrorResponse{
+			Code:    400,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.Response{
+		Code:    0,
+		Message: "标记成功",
+		Data:    nil,
 	})
 }

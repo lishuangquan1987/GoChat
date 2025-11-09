@@ -16,6 +16,9 @@ func (FriendRelationship) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int("userId").Comment("用户ID"),
 		field.Int("friendId").Comment("好友ID"),
+		field.String("remarkName").Optional().Comment("备注名"),
+		field.String("category").Optional().Comment("好友分组"),
+		field.Strings("tags").Optional().Comment("好友标签"),
 	}
 }
 

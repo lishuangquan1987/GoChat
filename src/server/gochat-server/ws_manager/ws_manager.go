@@ -74,6 +74,10 @@ func HandleWebSocketConnection(w http.ResponseWriter, r *http.Request) {
 		if err := services.CacheOnlineUser(userIdInt); err != nil {
 			utils.Warn("Failed to cache online user %s: %v", userId, err)
 		}
+		// 更新用户最后在线时间和状态
+		_ = services.UpdateUserLastSeen(userIdInt)
+		status := "online"
+		_, _ = services.UpdateUserProfile(userIdInt, nil, nil, nil, nil, nil, nil, &status)
 	}
 
 	log.Printf("User %s connected", userId)
@@ -113,6 +117,10 @@ func handleMessages(userId string, conn *websocket.Conn) {
 			if err := services.RemoveOnlineUser(userIdInt); err != nil {
 				utils.Warn("Failed to remove online user %s: %v", userId, err)
 			}
+			// 更新用户最后在线时间和状态
+			_ = services.UpdateUserLastSeen(userIdInt)
+			status := "offline"
+			_, _ = services.UpdateUserProfile(userIdInt, nil, nil, nil, nil, nil, nil, &status)
 		}
 		
 		log.Printf("User %s disconnected", userId)

@@ -130,8 +130,12 @@ func init() {
 	messageDescContent := messageFields[2].Descriptor()
 	// message.ContentValidator is a validator for the "content" field. It is called by the builders before save.
 	message.ContentValidator = messageDescContent.Validators[0].(func(string) error)
+	// messageDescIsRevoked is the schema descriptor for isRevoked field.
+	messageDescIsRevoked := messageFields[3].Descriptor()
+	// message.DefaultIsRevoked holds the default value on creation for the isRevoked field.
+	message.DefaultIsRevoked = messageDescIsRevoked.Default.(bool)
 	// messageDescCreateTime is the schema descriptor for createTime field.
-	messageDescCreateTime := messageFields[3].Descriptor()
+	messageDescCreateTime := messageFields[5].Descriptor()
 	// message.DefaultCreateTime holds the default value on creation for the createTime field.
 	message.DefaultCreateTime = messageDescCreateTime.Default.(func() time.Time)
 	messagestatusFields := schema.MessageStatus{}.Fields()
@@ -176,6 +180,10 @@ func init() {
 	userDescNickname := userFields[2].Descriptor()
 	// user.NicknameValidator is a validator for the "nickname" field. It is called by the builders before save.
 	user.NicknameValidator = userDescNickname.Validators[0].(func(string) error)
+	// userDescStatus is the schema descriptor for status field.
+	userDescStatus := userFields[9].Descriptor()
+	// user.DefaultStatus holds the default value on creation for the status field.
+	user.DefaultStatus = userDescStatus.Default.(string)
 	videomessageFields := schema.VideoMessage{}.Fields()
 	_ = videomessageFields
 	// videomessageDescMsgId is the schema descriptor for msgId field.

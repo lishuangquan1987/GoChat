@@ -10,6 +10,10 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback? onRetry;
   final String? senderNickname;
   final bool isGroupChat;
+  final VoidCallback? onRecall;
+  final VoidCallback? onCopy;
+  final VoidCallback? onDelete;
+  final int? currentUserId;
 
   const MessageBubble({
     Key? key,
@@ -18,6 +22,10 @@ class MessageBubble extends StatelessWidget {
     this.onRetry,
     this.senderNickname,
     this.isGroupChat = false,
+    this.onRecall,
+    this.onCopy,
+    this.onDelete,
+    this.currentUserId,
   }) : super(key: key);
 
   @override
@@ -68,20 +76,170 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildMessageContent(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: isMine ? const Color(0xFF95EC69) : Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    // 如果消息已撤回，显示撤回提示
+    if (message.isRevoked) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+            const SizedBox(width: 4),
+            Text(
+              isMine ? '你撤回了一条消息' : '对方撤回了一条消息',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onLongPress: () => _showMessageMenu(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isMine ? const Color(0xFF95EC69) : Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: _buildContent(context),
+      ),
+    );
+  }
+
+  void _showMessageMenu(BuildContext context) {
+    final List<PopupMenuEntry> items = [];
+
+    // 复制文本消息
+    if (message.msgType == MessageType.text && onCopy != null) {
+      items.add(
+        const PopupMenuItem(
+          value: 'copy',
+          child: Row(
+            children: [
+              Icon(Icons.copy, size: 20),
+              SizedBox(width: 8),
+              Text('复制'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 撤回消息（仅自己发送的，2分钟内）
+    if (isMine && 
+        currentUserId != null && 
+        message.canRecall(currentUserId!) && 
+        onRecall != null) {
+      items.add(
+        const PopupMenuItem(
+          value: 'recall',
+          child: Row(
+            children: [
+              Icon(Icons.undo, size: 20),
+              SizedBox(width: 8),
+              Text('撤回'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 删除消息
+    if (onDelete != null) {
+      items.add(
+        const PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete, size: 20, color: Colors.red),
+              SizedBox(width: 8),
+              Text('删除', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (items.isEmpty) return;
+
+    showMenu(
+      context: context,
+      position: const RelativeRect.fromLTRB(100, 100, 100, 100),
+      items: items,
+    ).then((value) {
+      if (value == 'copy' && onCopy != null) {
+        onCopy!();
+      } else if (value == 'recall' && onRecall != null) {
+        _confirmRecall(context);
+      } else if (value == 'delete' && onDelete != null) {
+        _confirmDelete(context);
+      }
+    });
+  }
+
+  void _confirmRecall(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('撤回消息'),
+        content: const Text('确定要撤回这条消息吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (onRecall != null) {
+                onRecall!();
+              }
+            },
+            child: const Text('确定'),
           ),
         ],
       ),
-      child: _buildContent(context),
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除消息'),
+        content: const Text('确定要删除这条消息吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (onDelete != null) {
+                onDelete!();
+              }
+            },
+            child: const Text('删除', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 

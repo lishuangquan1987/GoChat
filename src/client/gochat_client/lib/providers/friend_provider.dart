@@ -95,4 +95,10 @@ class FriendProvider with ChangeNotifier {
     // 可以在这里添加一些UI提示逻辑
     print('Friend request accepted: ${data['message']}');
   }
+
+  /// 刷新好友列表
+  Future<void> refreshFriends() async {
+    // 这个方法将被调用，触发UI刷新
+    notifyListeners();
+  }
 }

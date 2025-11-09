@@ -19,6 +19,10 @@ const (
 	FieldMsgType = "msg_type"
 	// FieldContent holds the string denoting the content field in the database.
 	FieldContent = "content"
+	// FieldIsRevoked holds the string denoting the isrevoked field in the database.
+	FieldIsRevoked = "is_revoked"
+	// FieldRevokeTime holds the string denoting the revoketime field in the database.
+	FieldRevokeTime = "revoke_time"
 	// FieldCreateTime holds the string denoting the createtime field in the database.
 	FieldCreateTime = "create_time"
 	// Table holds the table name of the message in the database.
@@ -31,6 +35,8 @@ var Columns = []string{
 	FieldMsgId,
 	FieldMsgType,
 	FieldContent,
+	FieldIsRevoked,
+	FieldRevokeTime,
 	FieldCreateTime,
 }
 
@@ -51,6 +57,8 @@ var (
 	MsgTypeValidator func(string) error
 	// ContentValidator is a validator for the "content" field. It is called by the builders before save.
 	ContentValidator func(string) error
+	// DefaultIsRevoked holds the default value on creation for the "isRevoked" field.
+	DefaultIsRevoked bool
 	// DefaultCreateTime holds the default value on creation for the "createTime" field.
 	DefaultCreateTime func() time.Time
 )
@@ -76,6 +84,16 @@ func ByMsgType(opts ...sql.OrderTermOption) OrderOption {
 // ByContent orders the results by the content field.
 func ByContent(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldContent, opts...).ToFunc()
+}
+
+// ByIsRevoked orders the results by the isRevoked field.
+func ByIsRevoked(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsRevoked, opts...).ToFunc()
+}
+
+// ByRevokeTime orders the results by the revokeTime field.
+func ByRevokeTime(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRevokeTime, opts...).ToFunc()
 }
 
 // ByCreateTime orders the results by the createTime field.

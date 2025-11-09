@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -10,10 +11,8 @@ import '../providers/user_provider.dart';
 import '../providers/group_provider.dart';
 
 import '../widgets/optimized_message_list.dart';
-import '../widgets/emoji_picker.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
-import '../services/message_dispatcher.dart';
 import 'login_page.dart';
 import '../utils/performance_monitor.dart';
 import '../utils/image_cache_manager.dart';
@@ -40,7 +39,6 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
   final PerformanceMonitor _performanceMonitor = PerformanceMonitor();
   final ImagePreloader _imagePreloader = ImagePreloader();
   bool _isLoading = false;
-  bool _showEmojiPicker = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -155,8 +153,18 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
           final msgId = data['msgId'] as String?;
           final status = data['status'] as String?;
           
+          debugPrint('ChatPage: Received message_status update: msgId=$msgId, status=$status');
+          
           if (msgId != null && status != null) {
             _updateMessageStatus(msgId, status);
+          } else {
+            debugPrint('ChatPage: Invalid message_status format: $data');
+          }
+        } else if (messageType == 'message_recalled') {
+          // 处理消息撤回通知
+          final msgId = data['msgId'] as String?;
+          if (msgId != null) {
+            _handleMessageRecalled(msgId);
           }
         }
       });
@@ -373,6 +381,9 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
       groupId: widget.conversation.group?.id,
       onLoadMore: _loadMoreHistory,
       onRetryMessage: _retryMessage,
+      onRecallMessage: _recallMessage,
+      onCopyMessage: _copyMessage,
+      onDeleteMessage: _deleteMessage,
     );
   }
 
@@ -547,9 +558,36 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
       );
 
       if (response.data['code'] == 0) {
-        // 更新消息状态为已发送
-        tempMessage.status = MessageStatus.sent;
-        chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
+        // 获取服务器返回的msgId（如果服务器返回了新的msgId）
+        final serverMsgId = response.data['data']?['msgId'] as String?;
+        if (serverMsgId != null && serverMsgId != tempMessage.msgId) {
+          // 服务器返回了新的msgId，需要更新消息
+          // 先删除旧消息
+          final messages = chatProvider.getMessages(widget.conversation.id);
+          if (messages != null) {
+            messages.removeWhere((m) => m.msgId == tempMessage.msgId);
+            chatProvider.setMessages(widget.conversation.id, messages);
+          }
+          // 创建新消息，使用服务器的msgId
+          final updatedMessage = Message(
+            msgId: serverMsgId,
+            fromUserId: tempMessage.fromUserId,
+            toUserId: tempMessage.toUserId,
+            msgType: tempMessage.msgType,
+            content: tempMessage.content,
+            isGroup: tempMessage.isGroup,
+            groupId: tempMessage.groupId,
+            createTime: tempMessage.createTime,
+            status: MessageStatus.sent,
+            isRevoked: tempMessage.isRevoked,
+            revokeTime: tempMessage.revokeTime,
+          );
+          chatProvider.addMessage(widget.conversation.id, updatedMessage, isCurrentChat: true);
+        } else {
+          // 使用原来的msgId，更新状态为已发送
+          tempMessage.status = MessageStatus.sent;
+          chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
+        }
       } else {
         // 发送失败
         tempMessage.status = MessageStatus.failed;
@@ -699,11 +737,11 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
         Navigator.pop(context); // 关闭进度对话框
       }
 
-      if (uploadResponse.data['code'] == 0) {
+        if (uploadResponse.data['code'] == 0) {
         final fileUrl = uploadResponse.data['data']['url'] as String;
 
         // 创建消息
-        final message = Message(
+        final tempMessage = Message(
           msgId: DateTime.now().millisecondsSinceEpoch.toString(),
           fromUserId: userProvider.currentUser!.id,
           toUserId: widget.conversation.type == ConversationType.private
@@ -720,23 +758,50 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
         );
 
         // 添加到消息列表
-        chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
+        chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
         _messageListKey.currentState?.scrollToBottom();
 
         // 发送消息
         final response = await _apiService.sendMessage(
-          message.toUserId,
-          message.msgType.value,
-          message.content,
-          groupId: message.groupId,
+          tempMessage.toUserId,
+          tempMessage.msgType.value,
+          tempMessage.content,
+          groupId: tempMessage.groupId,
         );
 
         if (response.data['code'] == 0) {
-          message.status = MessageStatus.sent;
-          chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
+          // 获取服务器返回的msgId（如果服务器返回了新的msgId）
+          final serverMsgId = response.data['data']?['msgId'] as String?;
+          if (serverMsgId != null && serverMsgId != tempMessage.msgId) {
+            // 服务器返回了新的msgId，需要更新消息
+            final messages = chatProvider.getMessages(widget.conversation.id);
+            if (messages != null) {
+              messages.removeWhere((m) => m.msgId == tempMessage.msgId);
+              chatProvider.setMessages(widget.conversation.id, messages);
+            }
+            // 创建新消息，使用服务器的msgId
+            final updatedMessage = Message(
+              msgId: serverMsgId,
+              fromUserId: tempMessage.fromUserId,
+              toUserId: tempMessage.toUserId,
+              msgType: tempMessage.msgType,
+              content: tempMessage.content,
+              isGroup: tempMessage.isGroup,
+              groupId: tempMessage.groupId,
+              createTime: tempMessage.createTime,
+              status: MessageStatus.sent,
+              isRevoked: tempMessage.isRevoked,
+              revokeTime: tempMessage.revokeTime,
+            );
+            chatProvider.addMessage(widget.conversation.id, updatedMessage, isCurrentChat: true);
+          } else {
+            // 使用原来的msgId，更新状态为已发送
+            tempMessage.status = MessageStatus.sent;
+            chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
+          }
         } else {
-          message.status = MessageStatus.failed;
-          chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
+          tempMessage.status = MessageStatus.failed;
+          chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
         }
       } else {
         if (mounted) {
@@ -766,14 +831,35 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
     );
   }
 
-  void _clearUnreadCount() {
-    final chatProvider = context.read<ChatProvider>();
-    chatProvider.clearUnreadCount(widget.conversation.id);
-    
-    // 更新桌面通知状态
-    final totalUnread = chatProvider.conversations
-        .fold<int>(0, (sum, conv) => sum + conv.unreadCount);
-    DesktopNotification.updateUnreadStatus(unreadCount: totalUnread);
+  Future<void> _clearUnreadCount() async {
+    try {
+      final friendId = widget.conversation.type == ConversationType.private
+          ? widget.conversation.user?.id
+          : null;
+      final groupId = widget.conversation.type == ConversationType.group
+          ? widget.conversation.group?.id
+          : null;
+
+      // 调用API标记所有消息为已读
+      await _apiService.markAllMessagesAsRead(
+        friendId: friendId,
+        groupId: groupId,
+      );
+      
+      // 清除本地未读计数
+      final chatProvider = context.read<ChatProvider>();
+      chatProvider.clearUnreadCount(widget.conversation.id);
+      
+      // 更新桌面通知状态
+      final totalUnread = chatProvider.conversations
+          .fold<int>(0, (sum, conv) => sum + conv.unreadCount);
+      DesktopNotification.updateUnreadStatus(unreadCount: totalUnread);
+    } catch (e) {
+      debugPrint('Error clearing unread count: $e');
+      // 即使API调用失败，也清除本地未读计数
+      final chatProvider = context.read<ChatProvider>();
+      chatProvider.clearUnreadCount(widget.conversation.id);
+    }
   }
 
   // 标记消息为已送达
@@ -812,6 +898,136 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
 
   // 更新消息状态
   void _updateMessageStatus(String msgId, String status) {
+    debugPrint('_updateMessageStatus: msgId=$msgId, status=$status, conversationId=${widget.conversation.id}');
+    
+    final chatProvider = context.read<ChatProvider>();
+    MessageStatus newStatus;
+    
+    switch (status) {
+      case 'delivered':
+        newStatus = MessageStatus.delivered;
+        break;
+      case 'read':
+        newStatus = MessageStatus.read;
+        break;
+      default:
+        debugPrint('_updateMessageStatus: Unknown status: $status');
+        return;
+    }
+    
+    // 首先尝试在当前会话中查找消息
+    final messages = chatProvider.getMessages(widget.conversation.id);
+    if (messages != null) {
+      final messageIndex = messages.indexWhere((m) => m.msgId == msgId);
+      if (messageIndex != -1) {
+        final message = messages[messageIndex];
+        // 只有当新状态比当前状态更新时才更新
+        // sending < sent < delivered < read
+        if (_shouldUpdateMessageStatus(message.status, newStatus)) {
+          debugPrint('_updateMessageStatus: Updating message $msgId from ${message.status} to $newStatus');
+          message.status = newStatus;
+          chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
+          return;
+        } else {
+          debugPrint('_updateMessageStatus: Status update skipped (current: ${message.status}, new: $newStatus)');
+          return;
+        }
+      }
+    }
+    
+    // 如果当前会话中没有找到，尝试在所有会话中查找
+    debugPrint('_updateMessageStatus: Message $msgId not found in current conversation, searching all conversations');
+    for (final conversation in chatProvider.conversations) {
+      final convMessages = chatProvider.getMessages(conversation.id);
+      if (convMessages != null) {
+        final messageIndex = convMessages.indexWhere((m) => m.msgId == msgId);
+        if (messageIndex != -1) {
+          final message = convMessages[messageIndex];
+          if (_shouldUpdateMessageStatus(message.status, newStatus)) {
+            debugPrint('_updateMessageStatus: Found message $msgId in conversation ${conversation.id}, updating status');
+            message.status = newStatus;
+            chatProvider.addMessage(conversation.id, message, isCurrentChat: conversation.id == widget.conversation.id);
+            return;
+          }
+        }
+      }
+    }
+    
+    debugPrint('_updateMessageStatus: Message $msgId not found in any conversation');
+  }
+  
+  // 判断是否应该更新消息状态（新状态必须比当前状态更新）
+  bool _shouldUpdateMessageStatus(MessageStatus current, MessageStatus newStatus) {
+    // 状态优先级：sending(0) < sent(1) < delivered(2) < read(3)
+    // failed(-1) 不应该被其他状态覆盖（除非是重新发送）
+    const statusValues = {
+      MessageStatus.sending: 0,
+      MessageStatus.sent: 1,
+      MessageStatus.delivered: 2,
+      MessageStatus.read: 3,
+      MessageStatus.failed: -1,
+    };
+    
+    final currentValue = statusValues[current] ?? -1;
+    final newValue = statusValues[newStatus] ?? -1;
+    
+    // 失败状态不应该被其他状态覆盖
+    if (current == MessageStatus.failed) {
+      return false;
+    }
+    
+    // 新状态值必须大于当前状态值
+    return newValue > currentValue;
+  }
+
+  Future<void> _recallMessage(Message message) async {
+    final userProvider = context.read<UserProvider>();
+    final chatProvider = context.read<ChatProvider>();
+    
+    if (userProvider.currentUser == null || message.fromUserId != userProvider.currentUser!.id) {
+      return;
+    }
+
+    // 检查是否可以撤回（2分钟内）
+    if (!message.canRecall(userProvider.currentUser!.id)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('消息发送超过2分钟，无法撤回')),
+        );
+      }
+      return;
+    }
+
+    try {
+      final response = await _apiService.recallMessage(message.msgId);
+      
+      if (response.data['code'] == 0) {
+        // 更新消息为已撤回状态
+        final recalledMessage = message.copyWithRevoked();
+        chatProvider.addMessage(widget.conversation.id, recalledMessage, isCurrentChat: true);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('消息已撤回'), backgroundColor: Colors.green),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.data['message'] ?? '撤回失败')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('撤回失败: $e')),
+        );
+      }
+    }
+  }
+
+  void _handleMessageRecalled(String msgId) {
     final chatProvider = context.read<ChatProvider>();
     final messages = chatProvider.getMessages(widget.conversation.id);
     
@@ -819,24 +1035,28 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
       final messageIndex = messages.indexWhere((m) => m.msgId == msgId);
       if (messageIndex != -1) {
         final message = messages[messageIndex];
-        MessageStatus newStatus;
-        
-        switch (status) {
-          case 'delivered':
-            newStatus = MessageStatus.delivered;
-            break;
-          case 'read':
-            newStatus = MessageStatus.read;
-            break;
-          default:
-            return;
-        }
-        
-        if (message.status != newStatus) {
-          message.status = newStatus;
-          chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
-        }
+        final recalledMessage = message.copyWithRevoked();
+        chatProvider.addMessage(widget.conversation.id, recalledMessage, isCurrentChat: true);
       }
+    }
+  }
+
+  void _copyMessage(Message message) {
+    if (message.msgType == MessageType.text) {
+      Clipboard.setData(ClipboardData(text: message.content));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('消息已复制到剪贴板')),
+      );
+    }
+  }
+
+  void _deleteMessage(Message message) {
+    final chatProvider = context.read<ChatProvider>();
+    // 从本地消息列表中删除（仅前端删除，不调用API）
+    final messages = chatProvider.getMessages(widget.conversation.id);
+    if (messages != null) {
+      final updatedMessages = messages.where((m) => m.msgId != message.msgId).toList();
+      chatProvider.setMessages(widget.conversation.id, updatedMessages);
     }
   }
 }

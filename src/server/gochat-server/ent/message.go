@@ -17,12 +17,16 @@ type Message struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// 消息ID
+	// 消息ID,由发送者产生
 	MsgId string `json:"msgId,omitempty"`
-	// 消息类型: text/image/video等
+	// 消息类型: text/image/video 或数值枚举
 	MsgType string `json:"msgType,omitempty"`
-	// 消息内容，文本或URL等
+	// 消息内容(冗余存储,便于快速列表展示)
 	Content string `json:"content,omitempty"`
+	// 是否已撤回
+	IsRevoked bool `json:"isRevoked,omitempty"`
+	// 撤回时间
+	RevokeTime *time.Time `json:"revokeTime,omitempty"`
 	// 创建时间
 	CreateTime   time.Time `json:"createTime,omitempty"`
 	selectValues sql.SelectValues
@@ -33,11 +37,13 @@ func (*Message) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case message.FieldIsRevoked:
+			values[i] = new(sql.NullBool)
 		case message.FieldID:
 			values[i] = new(sql.NullInt64)
 		case message.FieldMsgId, message.FieldMsgType, message.FieldContent:
 			values[i] = new(sql.NullString)
-		case message.FieldCreateTime:
+		case message.FieldRevokeTime, message.FieldCreateTime:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -77,6 +83,19 @@ func (m *Message) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field content", values[i])
 			} else if value.Valid {
 				m.Content = value.String
+			}
+		case message.FieldIsRevoked:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field isRevoked", values[i])
+			} else if value.Valid {
+				m.IsRevoked = value.Bool
+			}
+		case message.FieldRevokeTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field revokeTime", values[i])
+			} else if value.Valid {
+				m.RevokeTime = new(time.Time)
+				*m.RevokeTime = value.Time
 			}
 		case message.FieldCreateTime:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -128,6 +147,14 @@ func (m *Message) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("content=")
 	builder.WriteString(m.Content)
+	builder.WriteString(", ")
+	builder.WriteString("isRevoked=")
+	builder.WriteString(fmt.Sprintf("%v", m.IsRevoked))
+	builder.WriteString(", ")
+	if v := m.RevokeTime; v != nil {
+		builder.WriteString("revokeTime=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("createTime=")
 	builder.WriteString(m.CreateTime.Format(time.ANSIC))

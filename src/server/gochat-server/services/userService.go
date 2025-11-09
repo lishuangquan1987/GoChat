@@ -7,6 +7,7 @@ import (
 	"gochat_server/ent"
 	"gochat_server/ent/user"
 	"strconv"
+	"time"
 )
 
 // LoginResponse 登录响应结构
@@ -119,6 +120,56 @@ func UpdateUser(userId int, nickname string, sex int) (*ent.User, error) {
 	return user, nil
 }
 
+// UpdateUserProfile 更新用户详细资料
+func UpdateUserProfile(userId int, nickname *string, sex *int, avatar *string, signature *string, region *string, birthday *time.Time, status *string) (*ent.User, error) {
+	update := db.User.UpdateOneID(userId)
+
+	if nickname != nil {
+		update = update.SetNickname(*nickname)
+	}
+	if sex != nil {
+		update = update.SetSex(*sex)
+	}
+	if avatar != nil {
+		update = update.SetAvatar(*avatar)
+	}
+	if signature != nil {
+		update = update.SetSignature(*signature)
+	}
+	if region != nil {
+		update = update.SetRegion(*region)
+	}
+	if birthday != nil {
+		update = update.SetBirthday(*birthday)
+	}
+	if status != nil {
+		update = update.SetStatus(*status)
+	}
+
+	user, err := update.Save(context.TODO())
+	if err != nil {
+		return nil, errors.New("更新用户信息失败")
+	}
+
+	// 使缓存失效
+	_ = InvalidateUserCache(userId)
+
+	return user, nil
+}
+
+// UpdateUserLastSeen 更新用户最后在线时间
+func UpdateUserLastSeen(userId int) error {
+	_, err := db.User.UpdateOneID(userId).
+		SetLastSeen(time.Now()).
+		Save(context.TODO())
+	if err != nil {
+		return err
+	}
+	// 使缓存失效
+	_ = InvalidateUserCache(userId)
+	return nil
+}
+
 // Logout 用户登出
 func Logout(userId int) error {
 	// 删除 token
@@ -126,6 +177,92 @@ func Logout(userId int) error {
 		return errors.New("登出失败")
 	}
 	return nil
+}
+
+// SearchUsers 搜索用户
+func SearchUsers(keyword string, excludeFriends bool, userId int, limit int) ([]*ent.User, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 20 // 默认返回20条
+	}
+
+	// 判断是否为数字（用户ID精确搜索）
+	if userIdInt, err := strconv.Atoi(keyword); err == nil {
+		// 精确搜索用户ID
+		user, err := db.User.Get(context.TODO(), userIdInt)
+		if err != nil {
+			return []*ent.User{}, nil // 用户不存在，返回空列表
+		}
+		// 排除自己
+		if user.ID == userId {
+			return []*ent.User{}, nil
+		}
+		// 如果要求排除好友，需要检查
+		if excludeFriends {
+			isFriend, err := IsFriend(userId, user.ID)
+			if err == nil && isFriend {
+				return []*ent.User{}, nil
+			}
+		}
+		return []*ent.User{user}, nil
+	}
+
+	// 模糊搜索用户名或昵称
+	// 注意：ent 不支持 OR 条件的模糊搜索，需要分别查询后合并
+	usersByUsername, _ := db.User.Query().
+		Where(user.UsernameContains(keyword)).
+		Limit(limit).
+		All(context.TODO())
+
+	usersByNickname, _ := db.User.Query().
+		Where(user.NicknameContains(keyword)).
+		Limit(limit).
+		All(context.TODO())
+
+	// 合并结果并去重
+	userMap := make(map[int]*ent.User)
+	for _, u := range usersByUsername {
+		userMap[u.ID] = u
+	}
+	for _, u := range usersByNickname {
+		userMap[u.ID] = u
+	}
+
+	// 转换为切片
+	users := make([]*ent.User, 0, len(userMap))
+	for _, u := range userMap {
+		// 排除自己
+		if u.ID == userId {
+			continue
+		}
+		users = append(users, u)
+	}
+
+	// 如果要求排除好友，需要过滤
+	if excludeFriends {
+		// 获取用户的好友列表
+		friends, err := GetFriendList(userId)
+		if err == nil {
+			friendMap := make(map[int]bool)
+			for _, f := range friends {
+				friendMap[f.ID] = true
+			}
+			// 过滤掉已经是好友的用户
+			filteredUsers := make([]*ent.User, 0)
+			for _, u := range users {
+				if !friendMap[u.ID] {
+					filteredUsers = append(filteredUsers, u)
+				}
+			}
+			users = filteredUsers
+		}
+	}
+
+	// 限制返回数量
+	if len(users) > limit {
+		users = users[:limit]
+	}
+
+	return users, nil
 }
 
 // func AddFriendRequest(userId, friendId int, remark string) (bool, error) {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gochat_server/ent/user"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -23,7 +24,19 @@ type User struct {
 	// 昵称
 	Nickname string `json:"nickname,omitempty"`
 	// 性别: 0:男 1:女
-	Sex          int `json:"sex,omitempty"`
+	Sex int `json:"sex,omitempty"`
+	// 头像URL
+	Avatar string `json:"avatar,omitempty"`
+	// 个人签名
+	Signature string `json:"signature,omitempty"`
+	// 地区/城市
+	Region string `json:"region,omitempty"`
+	// 生日
+	Birthday *time.Time `json:"birthday,omitempty"`
+	// 最后在线时间
+	LastSeen *time.Time `json:"lastSeen,omitempty"`
+	// 在线状态: online/offline/busy/away
+	Status       string `json:"status,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -34,8 +47,10 @@ func (*User) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case user.FieldID, user.FieldSex:
 			values[i] = new(sql.NullInt64)
-		case user.FieldUsername, user.FieldPassword, user.FieldNickname:
+		case user.FieldUsername, user.FieldPassword, user.FieldNickname, user.FieldAvatar, user.FieldSignature, user.FieldRegion, user.FieldStatus:
 			values[i] = new(sql.NullString)
+		case user.FieldBirthday, user.FieldLastSeen:
+			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -80,6 +95,44 @@ func (u *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field sex", values[i])
 			} else if value.Valid {
 				u.Sex = int(value.Int64)
+			}
+		case user.FieldAvatar:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field avatar", values[i])
+			} else if value.Valid {
+				u.Avatar = value.String
+			}
+		case user.FieldSignature:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field signature", values[i])
+			} else if value.Valid {
+				u.Signature = value.String
+			}
+		case user.FieldRegion:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field region", values[i])
+			} else if value.Valid {
+				u.Region = value.String
+			}
+		case user.FieldBirthday:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field birthday", values[i])
+			} else if value.Valid {
+				u.Birthday = new(time.Time)
+				*u.Birthday = value.Time
+			}
+		case user.FieldLastSeen:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field lastSeen", values[i])
+			} else if value.Valid {
+				u.LastSeen = new(time.Time)
+				*u.LastSeen = value.Time
+			}
+		case user.FieldStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status", values[i])
+			} else if value.Valid {
+				u.Status = value.String
 			}
 		default:
 			u.selectValues.Set(columns[i], values[i])
@@ -128,6 +181,28 @@ func (u *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("sex=")
 	builder.WriteString(fmt.Sprintf("%v", u.Sex))
+	builder.WriteString(", ")
+	builder.WriteString("avatar=")
+	builder.WriteString(u.Avatar)
+	builder.WriteString(", ")
+	builder.WriteString("signature=")
+	builder.WriteString(u.Signature)
+	builder.WriteString(", ")
+	builder.WriteString("region=")
+	builder.WriteString(u.Region)
+	builder.WriteString(", ")
+	if v := u.Birthday; v != nil {
+		builder.WriteString("birthday=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := u.LastSeen; v != nil {
+		builder.WriteString("lastSeen=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("status=")
+	builder.WriteString(u.Status)
 	builder.WriteByte(')')
 	return builder.String()
 }

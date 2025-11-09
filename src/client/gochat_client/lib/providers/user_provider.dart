@@ -90,6 +90,16 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> refreshUser() async {
+    if (_token != null) {
+      final userJson = await StorageService.getUser();
+      if (userJson != null) {
+        _currentUser = User.fromJson(userJson);
+        notifyListeners();
+      }
+    }
+  }
+
   // 更新窗口标题
   Future<void> _updateWindowTitle() async {
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {

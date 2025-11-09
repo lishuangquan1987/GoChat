@@ -31,6 +31,7 @@ func RegisterRoutes(r *gin.Engine) {
 			userAuth.GET("/profile", controllers.GetProfile)
 			userAuth.PUT("/profile", controllers.UpdateProfile)
 			userAuth.POST("/logout", controllers.Logout)
+			userAuth.GET("/search", controllers.SearchUsers)
 		}
 
 		// 好友相关路由（需要认证）
@@ -44,6 +45,8 @@ func RegisterRoutes(r *gin.Engine) {
 			friends.GET("/requests", controllers.GetFriendRequests)
 			friends.GET("/requests/sent", controllers.GetSentFriendRequests)
 			friends.DELETE("/:friendId", controllers.DeleteFriend)
+			friends.PUT("/:friendId/remark", controllers.UpdateFriendRemark)
+			friends.GET("/:friendId", controllers.GetFriendWithRemark)
 		}
 
 		// 消息相关路由（需要认证）
@@ -57,7 +60,10 @@ func RegisterRoutes(r *gin.Engine) {
 			messages.POST("/upload", controllers.UploadFile)
 			messages.POST("/delivered", controllers.MarkMessageDelivered)
 			messages.POST("/read", controllers.MarkMessageRead)
+			messages.POST("/recall", controllers.RecallMessage)
 			messages.GET("/status", controllers.GetMessageStatus)
+			messages.GET("/unread", controllers.GetUnreadMessageCount)
+			messages.POST("/readall", controllers.MarkAllMessagesAsRead)
 		}
 
 		// 群组相关路由（需要认证）

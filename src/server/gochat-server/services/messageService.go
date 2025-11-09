@@ -7,6 +7,8 @@ import (
 	"gochat_server/dto"
 	"gochat_server/ent"
 	"gochat_server/ent/chatrecord"
+	"gochat_server/ent/message"
+	entmessagestatus "gochat_server/ent/messagestatus"
 	"time"
 
 	"github.com/google/uuid"
@@ -587,13 +589,16 @@ func GetConversationList(userId int) ([]map[string]interface{}, error) {
 
 		content, _ := getMessageContent(record.MsgId, record.MsgType)
 
+		// 计算未读消息数
+		unreadCount, _ := GetUnreadMessageCount(userId, friendId, nil)
+
 		conversation := map[string]interface{}{
 			"type":        "private",
 			"friendId":    friendId,
 			"friendName":  friend.Nickname,
 			"lastMessage": content,
 			"lastTime":    record.CreateTime,
-			"unreadCount": 0, // TODO: 实现未读消息计数
+			"unreadCount": unreadCount,
 		}
 
 		conversations = append(conversations, conversation)
@@ -602,6 +607,112 @@ func GetConversationList(userId int) ([]map[string]interface{}, error) {
 	// TODO: 添加群聊会话
 
 	return conversations, nil
+}
+
+// GetUnreadMessageCount 获取未读消息数
+// friendId: 私聊好友ID（如果为0，则查询所有私聊）
+// groupId: 群聊ID（如果为nil，则查询所有群聊）
+func GetUnreadMessageCount(userId int, friendId int, groupId *int) (int, error) {
+	// 查询消息状态表中该用户的未读消息
+	query := db.MessageStatus.Query().
+		Where(
+			entmessagestatus.UserId(userId),
+			entmessagestatus.IsRead(false),
+		)
+
+	allStatus, err := query.All(context.TODO())
+	if err != nil {
+		return 0, errors.New("查询消息状态失败")
+	}
+
+	count := 0
+	for _, status := range allStatus {
+		// 如果是私聊
+		if friendId > 0 {
+			// 查询该消息的记录，判断是否为与friendId的私聊
+			record, err := db.ChatRecord.Query().
+				Where(chatrecord.MsgId(status.MsgId)).
+				First(context.TODO())
+			if err == nil {
+				// 判断是否为与friendId的私聊消息
+				if !record.IsGroup {
+					if (record.FromUserId == friendId && record.ToUserId == userId) ||
+						(record.FromUserId == userId && record.ToUserId == friendId) {
+						count++
+					}
+				}
+			}
+		} else if groupId != nil {
+			// 如果是群聊
+			record, err := db.ChatRecord.Query().
+				Where(chatrecord.MsgId(status.MsgId)).
+				First(context.TODO())
+			if err == nil {
+				// GroupId是int类型，如果IsGroup为true，则GroupId应该有有效值
+				if record.IsGroup && record.GroupId == *groupId {
+					count++
+				}
+			}
+		} else {
+			// 查询所有未读消息
+			count++
+		}
+	}
+
+	return count, nil
+}
+
+// MarkAllMessagesAsRead 标记所有消息为已读
+func MarkAllMessagesAsRead(userId int, friendId *int, groupId *int) error {
+	// 查询该用户的所有未读消息状态
+	query := db.MessageStatus.Query().
+		Where(
+			entmessagestatus.UserId(userId),
+			entmessagestatus.IsRead(false),
+		)
+
+	allStatus, err := query.All(context.TODO())
+	if err != nil {
+		return errors.New("查询消息状态失败")
+	}
+
+	now := time.Now()
+	for _, status := range allStatus {
+		// 如果指定了friendId，只标记与该好友的私聊消息
+		if friendId != nil {
+			record, err := db.ChatRecord.Query().
+				Where(chatrecord.MsgId(status.MsgId)).
+				First(context.TODO())
+			if err == nil && !record.IsGroup {
+				if (record.FromUserId == *friendId && record.ToUserId == userId) ||
+					(record.FromUserId == userId && record.ToUserId == *friendId) {
+					_, _ = db.MessageStatus.UpdateOneID(status.ID).
+						SetIsRead(true).
+						SetReadTime(now).
+						Save(context.TODO())
+				}
+			}
+		} else if groupId != nil {
+			// 如果指定了groupId，只标记该群聊的消息
+			record, err := db.ChatRecord.Query().
+				Where(chatrecord.MsgId(status.MsgId)).
+				First(context.TODO())
+			if err == nil && record.IsGroup && record.GroupId == *groupId {
+				_, _ = db.MessageStatus.UpdateOneID(status.ID).
+					SetIsRead(true).
+					SetReadTime(now).
+					Save(context.TODO())
+			}
+		} else {
+			// 标记所有消息为已读
+			_, _ = db.MessageStatus.UpdateOneID(status.ID).
+				SetIsRead(true).
+				SetReadTime(now).
+				Save(context.TODO())
+		}
+	}
+
+	return nil
 }
 
 // CreateMessageStatus 创建消息状态记录
@@ -719,6 +830,51 @@ func GetMessageStatus(msgId string, userId int) (*ent.MessageStatus, error) {
 	}
 
 	return nil, errors.New("消息状态不存在")
+}
+
+// RecallMessage 撤回消息（限制2分钟内）
+func RecallMessage(msgId string, userId int) (*MessageDetail, error) {
+	// 查询消息
+	msg, err := db.Message.Query().
+		Where(message.MsgId(msgId)).
+		First(context.TODO())
+	if err != nil {
+		return nil, errors.New("消息不存在")
+	}
+
+	// 检查消息是否已撤回
+	if msg.IsRevoked {
+		return nil, errors.New("消息已撤回")
+	}
+
+	// 获取消息详情
+	messageDetail, err := GetMessageDetail(msgId)
+	if err != nil {
+		return nil, errors.New("获取消息详情失败")
+	}
+
+	// 检查是否为消息发送者
+	if messageDetail.FromUserId != userId {
+		return nil, errors.New("只能撤回自己发送的消息")
+	}
+
+	// 检查消息时间（2分钟内）
+	timeLimit := 2 * time.Minute
+	if time.Since(msg.CreateTime) > timeLimit {
+		return nil, errors.New("消息发送超过2分钟，无法撤回")
+	}
+
+	// 更新消息为已撤回
+	now := time.Now()
+	_, err = db.Message.UpdateOneID(msg.ID).
+		SetIsRevoked(true).
+		SetRevokeTime(now).
+		Save(context.TODO())
+	if err != nil {
+		return nil, errors.New("撤回消息失败")
+	}
+
+	return messageDetail, nil
 }
 
 // BuildGroupMessageDetail 构建群聊消息详情

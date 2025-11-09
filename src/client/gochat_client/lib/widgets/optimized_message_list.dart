@@ -14,6 +14,9 @@ class OptimizedMessageList extends StatefulWidget {
   final int? groupId;
   final Function()? onLoadMore;
   final Function(Message)? onRetryMessage;
+  final Function(Message)? onRecallMessage;
+  final Function(Message)? onCopyMessage;
+  final Function(Message)? onDeleteMessage;
 
   const OptimizedMessageList({
     Key? key,
@@ -22,6 +25,9 @@ class OptimizedMessageList extends StatefulWidget {
     this.groupId,
     this.onLoadMore,
     this.onRetryMessage,
+    this.onRecallMessage,
+    this.onCopyMessage,
+    this.onDeleteMessage,
   }) : super(key: key);
 
   @override
@@ -201,9 +207,13 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
               isMine: isMine,
               isGroupChat: widget.isGroupChat,
               senderNickname: senderNickname,
+              currentUserId: userProvider.currentUser?.id,
               onRetry: message.status == MessageStatus.failed && isMine
                   ? () => widget.onRetryMessage?.call(message)
                   : null,
+              onRecall: () => widget.onRecallMessage?.call(message),
+              onCopy: () => widget.onCopyMessage?.call(message),
+              onDelete: () => widget.onDeleteMessage?.call(message),
             );
           },
         );
@@ -219,6 +229,10 @@ class MessageBubbleWrapper extends StatelessWidget {
   final bool isGroupChat;
   final String? senderNickname;
   final VoidCallback? onRetry;
+  final VoidCallback? onRecall;
+  final VoidCallback? onCopy;
+  final VoidCallback? onDelete;
+  final int? currentUserId;
 
   const MessageBubbleWrapper({
     Key? key,
@@ -227,6 +241,10 @@ class MessageBubbleWrapper extends StatelessWidget {
     required this.isGroupChat,
     this.senderNickname,
     this.onRetry,
+    this.onRecall,
+    this.onCopy,
+    this.onDelete,
+    this.currentUserId,
   }) : super(key: key);
 
   @override
@@ -237,8 +255,10 @@ class MessageBubbleWrapper extends StatelessWidget {
       isGroupChat: isGroupChat,
       senderNickname: senderNickname,
       onRetry: onRetry,
+      onRecall: onRecall,
+      onCopy: onCopy,
+      onDelete: onDelete,
+      currentUserId: currentUserId,
     );
   }
-
-
 }

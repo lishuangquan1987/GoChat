@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"gochat_server/ent/user"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -51,6 +52,90 @@ func (uc *UserCreate) SetNillableSex(i *int) *UserCreate {
 	return uc
 }
 
+// SetAvatar sets the "avatar" field.
+func (uc *UserCreate) SetAvatar(s string) *UserCreate {
+	uc.mutation.SetAvatar(s)
+	return uc
+}
+
+// SetNillableAvatar sets the "avatar" field if the given value is not nil.
+func (uc *UserCreate) SetNillableAvatar(s *string) *UserCreate {
+	if s != nil {
+		uc.SetAvatar(*s)
+	}
+	return uc
+}
+
+// SetSignature sets the "signature" field.
+func (uc *UserCreate) SetSignature(s string) *UserCreate {
+	uc.mutation.SetSignature(s)
+	return uc
+}
+
+// SetNillableSignature sets the "signature" field if the given value is not nil.
+func (uc *UserCreate) SetNillableSignature(s *string) *UserCreate {
+	if s != nil {
+		uc.SetSignature(*s)
+	}
+	return uc
+}
+
+// SetRegion sets the "region" field.
+func (uc *UserCreate) SetRegion(s string) *UserCreate {
+	uc.mutation.SetRegion(s)
+	return uc
+}
+
+// SetNillableRegion sets the "region" field if the given value is not nil.
+func (uc *UserCreate) SetNillableRegion(s *string) *UserCreate {
+	if s != nil {
+		uc.SetRegion(*s)
+	}
+	return uc
+}
+
+// SetBirthday sets the "birthday" field.
+func (uc *UserCreate) SetBirthday(t time.Time) *UserCreate {
+	uc.mutation.SetBirthday(t)
+	return uc
+}
+
+// SetNillableBirthday sets the "birthday" field if the given value is not nil.
+func (uc *UserCreate) SetNillableBirthday(t *time.Time) *UserCreate {
+	if t != nil {
+		uc.SetBirthday(*t)
+	}
+	return uc
+}
+
+// SetLastSeen sets the "lastSeen" field.
+func (uc *UserCreate) SetLastSeen(t time.Time) *UserCreate {
+	uc.mutation.SetLastSeen(t)
+	return uc
+}
+
+// SetNillableLastSeen sets the "lastSeen" field if the given value is not nil.
+func (uc *UserCreate) SetNillableLastSeen(t *time.Time) *UserCreate {
+	if t != nil {
+		uc.SetLastSeen(*t)
+	}
+	return uc
+}
+
+// SetStatus sets the "status" field.
+func (uc *UserCreate) SetStatus(s string) *UserCreate {
+	uc.mutation.SetStatus(s)
+	return uc
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (uc *UserCreate) SetNillableStatus(s *string) *UserCreate {
+	if s != nil {
+		uc.SetStatus(*s)
+	}
+	return uc
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uc *UserCreate) Mutation() *UserMutation {
 	return uc.mutation
@@ -58,6 +143,7 @@ func (uc *UserCreate) Mutation() *UserMutation {
 
 // Save creates the User in the database.
 func (uc *UserCreate) Save(ctx context.Context) (*User, error) {
+	uc.defaults()
 	return withHooks(ctx, uc.sqlSave, uc.mutation, uc.hooks)
 }
 
@@ -80,6 +166,14 @@ func (uc *UserCreate) Exec(ctx context.Context) error {
 func (uc *UserCreate) ExecX(ctx context.Context) {
 	if err := uc.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (uc *UserCreate) defaults() {
+	if _, ok := uc.mutation.Status(); !ok {
+		v := user.DefaultStatus
+		uc.mutation.SetStatus(v)
 	}
 }
 
@@ -151,6 +245,30 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldSex, field.TypeInt, value)
 		_node.Sex = value
 	}
+	if value, ok := uc.mutation.Avatar(); ok {
+		_spec.SetField(user.FieldAvatar, field.TypeString, value)
+		_node.Avatar = value
+	}
+	if value, ok := uc.mutation.Signature(); ok {
+		_spec.SetField(user.FieldSignature, field.TypeString, value)
+		_node.Signature = value
+	}
+	if value, ok := uc.mutation.Region(); ok {
+		_spec.SetField(user.FieldRegion, field.TypeString, value)
+		_node.Region = value
+	}
+	if value, ok := uc.mutation.Birthday(); ok {
+		_spec.SetField(user.FieldBirthday, field.TypeTime, value)
+		_node.Birthday = &value
+	}
+	if value, ok := uc.mutation.LastSeen(); ok {
+		_spec.SetField(user.FieldLastSeen, field.TypeTime, value)
+		_node.LastSeen = &value
+	}
+	if value, ok := uc.mutation.Status(); ok {
+		_spec.SetField(user.FieldStatus, field.TypeString, value)
+		_node.Status = value
+	}
 	return _node, _spec
 }
 
@@ -172,6 +290,7 @@ func (ucb *UserCreateBulk) Save(ctx context.Context) ([]*User, error) {
 	for i := range ucb.builders {
 		func(i int, root context.Context) {
 			builder := ucb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*UserMutation)
 				if !ok {

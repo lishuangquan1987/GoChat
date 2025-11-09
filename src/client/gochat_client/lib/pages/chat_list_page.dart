@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../providers/chat_provider.dart';
 import '../providers/user_provider.dart';
+import '../services/api_service.dart';
+import '../models/conversation.dart';
 
 import '../widgets/optimized_conversation_list.dart';
 import '../utils/performance_monitor.dart';
 import '../utils/desktop_notification.dart';
 import 'chat_page.dart';
+import 'user_search_page.dart';
 
 class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});
@@ -25,18 +29,69 @@ class _ChatListPageState extends State<ChatListPage> with AutomaticKeepAliveClie
   Future<void> _handleRefresh() async {
     _performanceMonitor.startTimer('conversation_list_refresh');
     try {
-      // TODO: 从服务器获取最新的会话列表
-      // 这里可以调用 API 获取会话列表并更新 ChatProvider
-      await Future.delayed(const Duration(seconds: 1)); // 模拟网络请求
+      final chatProvider = context.read<ChatProvider>();
+      final apiService = ApiService();
       
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('刷新成功'),
-            duration: Duration(seconds: 1),
-            backgroundColor: Color(0xFF07C160),
-          ),
-        );
+      // 刷新会话列表（会从API获取最新的会话和未读数）
+      final response = await apiService.getConversationList();
+      
+      if (response.data['code'] == 0 && mounted) {
+        final conversationsData = response.data['data'] as List?;
+        if (conversationsData != null) {
+          final conversations = conversationsData
+              .map((json) => Conversation.fromJson(json as Map<String, dynamic>))
+              .toList();
+          chatProvider.setConversations(conversations);
+        }
+        
+        // 为每个会话获取准确的未读数
+        for (final conversation in chatProvider.conversations) {
+          try {
+            final friendId = conversation.type == ConversationType.private
+                ? conversation.user?.id
+                : null;
+            final groupId = conversation.type == ConversationType.group
+                ? conversation.group?.id
+                : null;
+            
+            final unreadResponse = await apiService.getUnreadMessageCount(
+              friendId: friendId,
+              groupId: groupId,
+            );
+            
+            if (unreadResponse.data['code'] == 0) {
+              final unreadCount = unreadResponse.data['data'] as int? ?? 0;
+              // 更新会话的未读数
+              final index = chatProvider.conversations.indexWhere((c) => c.id == conversation.id);
+              if (index != -1) {
+                final updatedConv = Conversation(
+                  id: conversation.id,
+                  type: conversation.type,
+                  user: conversation.user,
+                  group: conversation.group,
+                  lastMessage: conversation.lastMessage,
+                  unreadCount: unreadCount,
+                  lastTime: conversation.lastTime,
+                );
+                chatProvider.conversations[index] = updatedConv;
+              }
+            }
+          } catch (e) {
+            debugPrint('Error getting unread count for conversation ${conversation.id}: $e');
+          }
+        }
+        
+        chatProvider.setConversations(chatProvider.conversations);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('刷新成功'),
+              duration: Duration(seconds: 1),
+              backgroundColor: Color(0xFF07C160),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -54,39 +109,11 @@ class _ChatListPageState extends State<ChatListPage> with AutomaticKeepAliveClie
   }
 
   void _showSearchUserDialog() {
-    final searchController = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('搜索用户'),
-        content: TextField(
-          controller: searchController,
-          decoration: const InputDecoration(
-            hintText: '输入用户ID或用户名',
-            border: OutlineInputBorder(),
-          ),
-          keyboardType: TextInputType.number,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              if (searchController.text.isNotEmpty) {
-                _searchAndStartChat(searchController.text);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF07C160),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('搜索'),
-          ),
-        ],
+    // 直接跳转到用户搜索页面
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const UserSearchPage(),
       ),
     );
   }
@@ -109,27 +136,6 @@ class _ChatListPageState extends State<ChatListPage> with AutomaticKeepAliveClie
     );
   }
 
-  void _searchAndStartChat(String searchText) {
-    // 尝试解析为用户ID
-    final userId = int.tryParse(searchText);
-    if (userId != null) {
-      // TODO: 调用API搜索用户并创建会话
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('搜索用户ID: $userId (功能开发中...)'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } else {
-      // 按用户名搜索
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('搜索用户名: $searchText (功能开发中...)'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

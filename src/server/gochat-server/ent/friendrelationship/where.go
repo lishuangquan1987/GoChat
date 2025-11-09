@@ -63,6 +63,16 @@ func FriendId(v int) predicate.FriendRelationship {
 	return predicate.FriendRelationship(sql.FieldEQ(FieldFriendId, v))
 }
 
+// RemarkName applies equality check predicate on the "remarkName" field. It's identical to RemarkNameEQ.
+func RemarkName(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldEQ(FieldRemarkName, v))
+}
+
+// Category applies equality check predicate on the "category" field. It's identical to CategoryEQ.
+func Category(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldEQ(FieldCategory, v))
+}
+
 // UserIdEQ applies the EQ predicate on the "userId" field.
 func UserIdEQ(v int) predicate.FriendRelationship {
 	return predicate.FriendRelationship(sql.FieldEQ(FieldUserId, v))
@@ -141,6 +151,166 @@ func FriendIdLT(v int) predicate.FriendRelationship {
 // FriendIdLTE applies the LTE predicate on the "friendId" field.
 func FriendIdLTE(v int) predicate.FriendRelationship {
 	return predicate.FriendRelationship(sql.FieldLTE(FieldFriendId, v))
+}
+
+// RemarkNameEQ applies the EQ predicate on the "remarkName" field.
+func RemarkNameEQ(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldEQ(FieldRemarkName, v))
+}
+
+// RemarkNameNEQ applies the NEQ predicate on the "remarkName" field.
+func RemarkNameNEQ(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldNEQ(FieldRemarkName, v))
+}
+
+// RemarkNameIn applies the In predicate on the "remarkName" field.
+func RemarkNameIn(vs ...string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldIn(FieldRemarkName, vs...))
+}
+
+// RemarkNameNotIn applies the NotIn predicate on the "remarkName" field.
+func RemarkNameNotIn(vs ...string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldNotIn(FieldRemarkName, vs...))
+}
+
+// RemarkNameGT applies the GT predicate on the "remarkName" field.
+func RemarkNameGT(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldGT(FieldRemarkName, v))
+}
+
+// RemarkNameGTE applies the GTE predicate on the "remarkName" field.
+func RemarkNameGTE(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldGTE(FieldRemarkName, v))
+}
+
+// RemarkNameLT applies the LT predicate on the "remarkName" field.
+func RemarkNameLT(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldLT(FieldRemarkName, v))
+}
+
+// RemarkNameLTE applies the LTE predicate on the "remarkName" field.
+func RemarkNameLTE(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldLTE(FieldRemarkName, v))
+}
+
+// RemarkNameContains applies the Contains predicate on the "remarkName" field.
+func RemarkNameContains(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldContains(FieldRemarkName, v))
+}
+
+// RemarkNameHasPrefix applies the HasPrefix predicate on the "remarkName" field.
+func RemarkNameHasPrefix(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldHasPrefix(FieldRemarkName, v))
+}
+
+// RemarkNameHasSuffix applies the HasSuffix predicate on the "remarkName" field.
+func RemarkNameHasSuffix(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldHasSuffix(FieldRemarkName, v))
+}
+
+// RemarkNameIsNil applies the IsNil predicate on the "remarkName" field.
+func RemarkNameIsNil() predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldIsNull(FieldRemarkName))
+}
+
+// RemarkNameNotNil applies the NotNil predicate on the "remarkName" field.
+func RemarkNameNotNil() predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldNotNull(FieldRemarkName))
+}
+
+// RemarkNameEqualFold applies the EqualFold predicate on the "remarkName" field.
+func RemarkNameEqualFold(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldEqualFold(FieldRemarkName, v))
+}
+
+// RemarkNameContainsFold applies the ContainsFold predicate on the "remarkName" field.
+func RemarkNameContainsFold(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldContainsFold(FieldRemarkName, v))
+}
+
+// CategoryEQ applies the EQ predicate on the "category" field.
+func CategoryEQ(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldEQ(FieldCategory, v))
+}
+
+// CategoryNEQ applies the NEQ predicate on the "category" field.
+func CategoryNEQ(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldNEQ(FieldCategory, v))
+}
+
+// CategoryIn applies the In predicate on the "category" field.
+func CategoryIn(vs ...string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldIn(FieldCategory, vs...))
+}
+
+// CategoryNotIn applies the NotIn predicate on the "category" field.
+func CategoryNotIn(vs ...string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldNotIn(FieldCategory, vs...))
+}
+
+// CategoryGT applies the GT predicate on the "category" field.
+func CategoryGT(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldGT(FieldCategory, v))
+}
+
+// CategoryGTE applies the GTE predicate on the "category" field.
+func CategoryGTE(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldGTE(FieldCategory, v))
+}
+
+// CategoryLT applies the LT predicate on the "category" field.
+func CategoryLT(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldLT(FieldCategory, v))
+}
+
+// CategoryLTE applies the LTE predicate on the "category" field.
+func CategoryLTE(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldLTE(FieldCategory, v))
+}
+
+// CategoryContains applies the Contains predicate on the "category" field.
+func CategoryContains(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldContains(FieldCategory, v))
+}
+
+// CategoryHasPrefix applies the HasPrefix predicate on the "category" field.
+func CategoryHasPrefix(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldHasPrefix(FieldCategory, v))
+}
+
+// CategoryHasSuffix applies the HasSuffix predicate on the "category" field.
+func CategoryHasSuffix(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldHasSuffix(FieldCategory, v))
+}
+
+// CategoryIsNil applies the IsNil predicate on the "category" field.
+func CategoryIsNil() predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldIsNull(FieldCategory))
+}
+
+// CategoryNotNil applies the NotNil predicate on the "category" field.
+func CategoryNotNil() predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldNotNull(FieldCategory))
+}
+
+// CategoryEqualFold applies the EqualFold predicate on the "category" field.
+func CategoryEqualFold(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldEqualFold(FieldCategory, v))
+}
+
+// CategoryContainsFold applies the ContainsFold predicate on the "category" field.
+func CategoryContainsFold(v string) predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldContainsFold(FieldCategory, v))
+}
+
+// TagsIsNil applies the IsNil predicate on the "tags" field.
+func TagsIsNil() predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldIsNull(FieldTags))
+}
+
+// TagsNotNil applies the NotNil predicate on the "tags" field.
+func TagsNotNil() predicate.FriendRelationship {
+	return predicate.FriendRelationship(sql.FieldNotNull(FieldTags))
 }
 
 // And groups predicates with the AND operator between them.

@@ -2,7 +2,6 @@ package schema
 
 import (
 	"time"
-
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -30,3 +29,4 @@ func (MessageStatus) Indexes() []ent.Index {
 		index.Fields("userId"),
 	}
 }
+

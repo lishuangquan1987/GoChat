@@ -69,6 +69,16 @@ func Content(v string) predicate.Message {
 	return predicate.Message(sql.FieldEQ(FieldContent, v))
 }
 
+// IsRevoked applies equality check predicate on the "isRevoked" field. It's identical to IsRevokedEQ.
+func IsRevoked(v bool) predicate.Message {
+	return predicate.Message(sql.FieldEQ(FieldIsRevoked, v))
+}
+
+// RevokeTime applies equality check predicate on the "revokeTime" field. It's identical to RevokeTimeEQ.
+func RevokeTime(v time.Time) predicate.Message {
+	return predicate.Message(sql.FieldEQ(FieldRevokeTime, v))
+}
+
 // CreateTime applies equality check predicate on the "createTime" field. It's identical to CreateTimeEQ.
 func CreateTime(v time.Time) predicate.Message {
 	return predicate.Message(sql.FieldEQ(FieldCreateTime, v))
@@ -267,6 +277,66 @@ func ContentEqualFold(v string) predicate.Message {
 // ContentContainsFold applies the ContainsFold predicate on the "content" field.
 func ContentContainsFold(v string) predicate.Message {
 	return predicate.Message(sql.FieldContainsFold(FieldContent, v))
+}
+
+// IsRevokedEQ applies the EQ predicate on the "isRevoked" field.
+func IsRevokedEQ(v bool) predicate.Message {
+	return predicate.Message(sql.FieldEQ(FieldIsRevoked, v))
+}
+
+// IsRevokedNEQ applies the NEQ predicate on the "isRevoked" field.
+func IsRevokedNEQ(v bool) predicate.Message {
+	return predicate.Message(sql.FieldNEQ(FieldIsRevoked, v))
+}
+
+// RevokeTimeEQ applies the EQ predicate on the "revokeTime" field.
+func RevokeTimeEQ(v time.Time) predicate.Message {
+	return predicate.Message(sql.FieldEQ(FieldRevokeTime, v))
+}
+
+// RevokeTimeNEQ applies the NEQ predicate on the "revokeTime" field.
+func RevokeTimeNEQ(v time.Time) predicate.Message {
+	return predicate.Message(sql.FieldNEQ(FieldRevokeTime, v))
+}
+
+// RevokeTimeIn applies the In predicate on the "revokeTime" field.
+func RevokeTimeIn(vs ...time.Time) predicate.Message {
+	return predicate.Message(sql.FieldIn(FieldRevokeTime, vs...))
+}
+
+// RevokeTimeNotIn applies the NotIn predicate on the "revokeTime" field.
+func RevokeTimeNotIn(vs ...time.Time) predicate.Message {
+	return predicate.Message(sql.FieldNotIn(FieldRevokeTime, vs...))
+}
+
+// RevokeTimeGT applies the GT predicate on the "revokeTime" field.
+func RevokeTimeGT(v time.Time) predicate.Message {
+	return predicate.Message(sql.FieldGT(FieldRevokeTime, v))
+}
+
+// RevokeTimeGTE applies the GTE predicate on the "revokeTime" field.
+func RevokeTimeGTE(v time.Time) predicate.Message {
+	return predicate.Message(sql.FieldGTE(FieldRevokeTime, v))
+}
+
+// RevokeTimeLT applies the LT predicate on the "revokeTime" field.
+func RevokeTimeLT(v time.Time) predicate.Message {
+	return predicate.Message(sql.FieldLT(FieldRevokeTime, v))
+}
+
+// RevokeTimeLTE applies the LTE predicate on the "revokeTime" field.
+func RevokeTimeLTE(v time.Time) predicate.Message {
+	return predicate.Message(sql.FieldLTE(FieldRevokeTime, v))
+}
+
+// RevokeTimeIsNil applies the IsNil predicate on the "revokeTime" field.
+func RevokeTimeIsNil() predicate.Message {
+	return predicate.Message(sql.FieldIsNull(FieldRevokeTime))
+}
+
+// RevokeTimeNotNil applies the NotNil predicate on the "revokeTime" field.
+func RevokeTimeNotNil() predicate.Message {
+	return predicate.Message(sql.FieldNotNull(FieldRevokeTime))
 }
 
 // CreateTimeEQ applies the EQ predicate on the "createTime" field.

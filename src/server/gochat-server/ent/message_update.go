@@ -70,6 +70,40 @@ func (mu *MessageUpdate) SetNillableContent(s *string) *MessageUpdate {
 	return mu
 }
 
+// SetIsRevoked sets the "isRevoked" field.
+func (mu *MessageUpdate) SetIsRevoked(b bool) *MessageUpdate {
+	mu.mutation.SetIsRevoked(b)
+	return mu
+}
+
+// SetNillableIsRevoked sets the "isRevoked" field if the given value is not nil.
+func (mu *MessageUpdate) SetNillableIsRevoked(b *bool) *MessageUpdate {
+	if b != nil {
+		mu.SetIsRevoked(*b)
+	}
+	return mu
+}
+
+// SetRevokeTime sets the "revokeTime" field.
+func (mu *MessageUpdate) SetRevokeTime(t time.Time) *MessageUpdate {
+	mu.mutation.SetRevokeTime(t)
+	return mu
+}
+
+// SetNillableRevokeTime sets the "revokeTime" field if the given value is not nil.
+func (mu *MessageUpdate) SetNillableRevokeTime(t *time.Time) *MessageUpdate {
+	if t != nil {
+		mu.SetRevokeTime(*t)
+	}
+	return mu
+}
+
+// ClearRevokeTime clears the value of the "revokeTime" field.
+func (mu *MessageUpdate) ClearRevokeTime() *MessageUpdate {
+	mu.mutation.ClearRevokeTime()
+	return mu
+}
+
 // SetCreateTime sets the "createTime" field.
 func (mu *MessageUpdate) SetCreateTime(t time.Time) *MessageUpdate {
 	mu.mutation.SetCreateTime(t)
@@ -157,6 +191,15 @@ func (mu *MessageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := mu.mutation.Content(); ok {
 		_spec.SetField(message.FieldContent, field.TypeString, value)
 	}
+	if value, ok := mu.mutation.IsRevoked(); ok {
+		_spec.SetField(message.FieldIsRevoked, field.TypeBool, value)
+	}
+	if value, ok := mu.mutation.RevokeTime(); ok {
+		_spec.SetField(message.FieldRevokeTime, field.TypeTime, value)
+	}
+	if mu.mutation.RevokeTimeCleared() {
+		_spec.ClearField(message.FieldRevokeTime, field.TypeTime)
+	}
 	if value, ok := mu.mutation.CreateTime(); ok {
 		_spec.SetField(message.FieldCreateTime, field.TypeTime, value)
 	}
@@ -219,6 +262,40 @@ func (muo *MessageUpdateOne) SetNillableContent(s *string) *MessageUpdateOne {
 	if s != nil {
 		muo.SetContent(*s)
 	}
+	return muo
+}
+
+// SetIsRevoked sets the "isRevoked" field.
+func (muo *MessageUpdateOne) SetIsRevoked(b bool) *MessageUpdateOne {
+	muo.mutation.SetIsRevoked(b)
+	return muo
+}
+
+// SetNillableIsRevoked sets the "isRevoked" field if the given value is not nil.
+func (muo *MessageUpdateOne) SetNillableIsRevoked(b *bool) *MessageUpdateOne {
+	if b != nil {
+		muo.SetIsRevoked(*b)
+	}
+	return muo
+}
+
+// SetRevokeTime sets the "revokeTime" field.
+func (muo *MessageUpdateOne) SetRevokeTime(t time.Time) *MessageUpdateOne {
+	muo.mutation.SetRevokeTime(t)
+	return muo
+}
+
+// SetNillableRevokeTime sets the "revokeTime" field if the given value is not nil.
+func (muo *MessageUpdateOne) SetNillableRevokeTime(t *time.Time) *MessageUpdateOne {
+	if t != nil {
+		muo.SetRevokeTime(*t)
+	}
+	return muo
+}
+
+// ClearRevokeTime clears the value of the "revokeTime" field.
+func (muo *MessageUpdateOne) ClearRevokeTime() *MessageUpdateOne {
+	muo.mutation.ClearRevokeTime()
 	return muo
 }
 
@@ -338,6 +415,15 @@ func (muo *MessageUpdateOne) sqlSave(ctx context.Context) (_node *Message, err e
 	}
 	if value, ok := muo.mutation.Content(); ok {
 		_spec.SetField(message.FieldContent, field.TypeString, value)
+	}
+	if value, ok := muo.mutation.IsRevoked(); ok {
+		_spec.SetField(message.FieldIsRevoked, field.TypeBool, value)
+	}
+	if value, ok := muo.mutation.RevokeTime(); ok {
+		_spec.SetField(message.FieldRevokeTime, field.TypeTime, value)
+	}
+	if muo.mutation.RevokeTimeCleared() {
+		_spec.ClearField(message.FieldRevokeTime, field.TypeTime)
 	}
 	if value, ok := muo.mutation.CreateTime(); ok {
 		_spec.SetField(message.FieldCreateTime, field.TypeTime, value)

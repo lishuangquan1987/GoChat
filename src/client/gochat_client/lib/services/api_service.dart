@@ -74,6 +74,34 @@ class ApiService {
     });
   }
 
+  Future<Response> updateUserProfile({
+    String? nickname,
+    int? sex,
+    String? avatar,
+    String? signature,
+    String? region,
+    String? birthday,
+    String? status,
+  }) {
+    final data = <String, dynamic>{};
+    if (nickname != null) data['nickname'] = nickname;
+    if (sex != null) data['sex'] = sex;
+    if (avatar != null) data['avatar'] = avatar;
+    if (signature != null) data['signature'] = signature;
+    if (region != null) data['region'] = region;
+    if (birthday != null) data['birthday'] = birthday;
+    if (status != null) data['status'] = status;
+    return _dio.put('/user/profile', data: data);
+  }
+
+  Future<Response> searchUsers(String keyword, {bool excludeFriends = false, int limit = 20}) {
+    return _dio.get('/user/search', queryParameters: {
+      'keyword': keyword,
+      'excludeFriends': excludeFriends,
+      'limit': limit,
+    });
+  }
+
   Future<Response> logout() {
     return _dio.post('/user/logout');
   }
@@ -110,6 +138,22 @@ class ApiService {
     return _dio.delete('/friends/$friendId');
   }
 
+  Future<Response> updateFriendRemark(int friendId, {
+    String? remarkName,
+    String? category,
+    List<String>? tags,
+  }) {
+    final data = <String, dynamic>{};
+    if (remarkName != null) data['remarkName'] = remarkName;
+    if (category != null) data['category'] = category;
+    if (tags != null) data['tags'] = tags;
+    return _dio.put('/friends/$friendId/remark', data: data);
+  }
+
+  Future<Response> getFriendWithRemark(int friendId) {
+    return _dio.get('/friends/$friendId');
+  }
+
   // 消息相关
   Future<Response> sendMessage(int toUserId, int msgType, String content, {int? groupId}) {
     return _dio.post('/messages/send', data: {
@@ -143,6 +187,26 @@ class ApiService {
       'type': type,
     });
     return _dio.post('/messages/upload', data: formData);
+  }
+
+  Future<Response> recallMessage(String msgId) {
+    return _dio.post('/messages/recall', data: {
+      'msgId': msgId,
+    });
+  }
+
+  Future<Response> getUnreadMessageCount({int? friendId, int? groupId}) {
+    final queryParameters = <String, dynamic>{};
+    if (friendId != null) queryParameters['friendId'] = friendId;
+    if (groupId != null) queryParameters['groupId'] = groupId;
+    return _dio.get('/messages/unread', queryParameters: queryParameters);
+  }
+
+  Future<Response> markAllMessagesAsRead({int? friendId, int? groupId}) {
+    final queryParameters = <String, dynamic>{};
+    if (friendId != null) queryParameters['friendId'] = friendId;
+    if (groupId != null) queryParameters['groupId'] = groupId;
+    return _dio.post('/messages/readall', queryParameters: queryParameters);
   }
 
   // 群组相关

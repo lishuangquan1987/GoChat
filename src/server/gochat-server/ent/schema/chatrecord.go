@@ -35,7 +35,7 @@ func (ChatRecord) Edges() []ent.Edge {
 func (ChatRecord) Indexes() []ent.Index {
 	return []ent.Index{
 		// 消息ID索引，用于快速查找消息
-		index.Fields("msgId").Unique(),
+		index.Fields("msgId"),
 		// 发送者和接收者组合索引，用于查询聊天历史
 		index.Fields("fromUserId", "toUserId"),
 		// 接收者和创建时间索引，用于查询用户收到的消息

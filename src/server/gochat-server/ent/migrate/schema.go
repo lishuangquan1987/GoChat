@@ -27,7 +27,7 @@ var (
 		Indexes: []*schema.Index{
 			{
 				Name:    "chatrecord_msg_id",
-				Unique:  true,
+				Unique:  false,
 				Columns: []*schema.Column{ChatRecordsColumns[1]},
 			},
 			{
@@ -92,6 +92,9 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "user_id", Type: field.TypeInt},
 		{Name: "friend_id", Type: field.TypeInt},
+		{Name: "remark_name", Type: field.TypeString, Nullable: true},
+		{Name: "category", Type: field.TypeString, Nullable: true},
+		{Name: "tags", Type: field.TypeJSON, Nullable: true},
 	}
 	// FriendRelationshipsTable holds the schema information for the "friend_relationships" table.
 	FriendRelationshipsTable = &schema.Table{
@@ -218,9 +221,11 @@ var (
 	// MessagesColumns holds the columns for the "messages" table.
 	MessagesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "msg_id", Type: field.TypeString, Unique: true},
+		{Name: "msg_id", Type: field.TypeString},
 		{Name: "msg_type", Type: field.TypeString},
 		{Name: "content", Type: field.TypeString},
+		{Name: "is_revoked", Type: field.TypeBool, Default: false},
+		{Name: "revoke_time", Type: field.TypeTime, Nullable: true},
 		{Name: "create_time", Type: field.TypeTime},
 	}
 	// MessagesTable holds the schema information for the "messages" table.
@@ -277,6 +282,12 @@ var (
 		{Name: "password", Type: field.TypeString},
 		{Name: "nickname", Type: field.TypeString},
 		{Name: "sex", Type: field.TypeInt, Nullable: true},
+		{Name: "avatar", Type: field.TypeString, Nullable: true},
+		{Name: "signature", Type: field.TypeString, Nullable: true},
+		{Name: "region", Type: field.TypeString, Nullable: true},
+		{Name: "birthday", Type: field.TypeTime, Nullable: true},
+		{Name: "last_seen", Type: field.TypeTime, Nullable: true},
+		{Name: "status", Type: field.TypeString, Nullable: true, Default: "online"},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{

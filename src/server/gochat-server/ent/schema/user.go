@@ -18,8 +18,13 @@ func (User) Fields() []ent.Field {
 		field.String("password").NotEmpty().Comment("密码"),
 		field.String("nickname").NotEmpty().Comment("昵称"),
 		field.Int("sex").Optional().Comment("性别: 0:男 1:女"),
+		field.String("avatar").Optional().Comment("头像URL"),
+		field.String("signature").Optional().Comment("个人签名"),
+		field.String("region").Optional().Comment("地区/城市"),
+		field.Time("birthday").Optional().Nillable().Comment("生日"),
+		field.Time("lastSeen").Optional().Nillable().Comment("最后在线时间"),
+		field.String("status").Optional().Default("online").Comment("在线状态: online/offline/busy/away"),
 	}
-
 }
 
 // Edges of the User.

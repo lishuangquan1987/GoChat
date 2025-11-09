@@ -19,6 +19,18 @@ const (
 	FieldNickname = "nickname"
 	// FieldSex holds the string denoting the sex field in the database.
 	FieldSex = "sex"
+	// FieldAvatar holds the string denoting the avatar field in the database.
+	FieldAvatar = "avatar"
+	// FieldSignature holds the string denoting the signature field in the database.
+	FieldSignature = "signature"
+	// FieldRegion holds the string denoting the region field in the database.
+	FieldRegion = "region"
+	// FieldBirthday holds the string denoting the birthday field in the database.
+	FieldBirthday = "birthday"
+	// FieldLastSeen holds the string denoting the lastseen field in the database.
+	FieldLastSeen = "last_seen"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 )
@@ -30,6 +42,12 @@ var Columns = []string{
 	FieldPassword,
 	FieldNickname,
 	FieldSex,
+	FieldAvatar,
+	FieldSignature,
+	FieldRegion,
+	FieldBirthday,
+	FieldLastSeen,
+	FieldStatus,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -49,6 +67,8 @@ var (
 	PasswordValidator func(string) error
 	// NicknameValidator is a validator for the "nickname" field. It is called by the builders before save.
 	NicknameValidator func(string) error
+	// DefaultStatus holds the default value on creation for the "status" field.
+	DefaultStatus string
 )
 
 // OrderOption defines the ordering options for the User queries.
@@ -77,4 +97,34 @@ func ByNickname(opts ...sql.OrderTermOption) OrderOption {
 // BySex orders the results by the sex field.
 func BySex(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSex, opts...).ToFunc()
+}
+
+// ByAvatar orders the results by the avatar field.
+func ByAvatar(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAvatar, opts...).ToFunc()
+}
+
+// BySignature orders the results by the signature field.
+func BySignature(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSignature, opts...).ToFunc()
+}
+
+// ByRegion orders the results by the region field.
+func ByRegion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRegion, opts...).ToFunc()
+}
+
+// ByBirthday orders the results by the birthday field.
+func ByBirthday(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBirthday, opts...).ToFunc()
+}
+
+// ByLastSeen orders the results by the lastSeen field.
+func ByLastSeen(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastSeen, opts...).ToFunc()
+}
+
+// ByStatus orders the results by the status field.
+func ByStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
