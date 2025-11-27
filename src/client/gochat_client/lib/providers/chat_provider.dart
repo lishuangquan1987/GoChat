@@ -304,6 +304,19 @@ class ChatProvider with ChangeNotifier {
     _debouncedNotify();
   }
 
+  void pinConversation(String conversationId) {
+    final index = _conversations.indexWhere((c) => c.id == conversationId);
+    if (index != -1) {
+      final conversation = _conversations.removeAt(index);
+      _conversations.insert(0, conversation);
+      _debouncedNotify();
+    }
+  }
+
+  void deleteConversation(String conversationId) {
+    removeConversation(conversationId);
+  }
+
   // 创建或获取私聊会话
   Conversation getOrCreatePrivateConversation(User user) {
     final conversationId = 'private_${user.id}';

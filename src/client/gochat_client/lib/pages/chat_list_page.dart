@@ -136,6 +136,69 @@ class _ChatListPageState extends State<ChatListPage> with AutomaticKeepAliveClie
     );
   }
 
+  void _showConversationMenu(Conversation conversation) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.pin_drop_outlined),
+                title: const Text('置顶会话'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pinConversation(conversation);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline),
+                title: const Text('删除会话'),
+                textColor: Colors.red,
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteConversation(conversation);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.more_horiz),
+                title: const Text('更多'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showMoreOptionsForConversation(conversation);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _pinConversation(Conversation conversation) {
+    final chatProvider = context.read<ChatProvider>();
+    chatProvider.pinConversation(conversation.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('会话已置顶')),
+    );
+  }
+
+  void _deleteConversation(Conversation conversation) {
+    final chatProvider = context.read<ChatProvider>();
+    chatProvider.deleteConversation(conversation.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('会话已删除')),
+    );
+  }
+
+  void _showMoreOptionsForConversation(Conversation conversation) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('更多功能开发中...')),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -230,10 +293,7 @@ class _ChatListPageState extends State<ChatListPage> with AutomaticKeepAliveClie
             );
           },
           onConversationLongPress: (conversation) {
-            // TODO: 显示会话操作菜单（删除、置顶等）
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('长按功能开发中...')),
-            );
+            _showConversationMenu(conversation);
           },
         ),
       ),

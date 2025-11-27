@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+import 'package:path/path.dart' as path;
 import '../models/message.dart';
 import '../models/conversation.dart';
 import '../models/user.dart';
@@ -11,6 +13,7 @@ import '../providers/user_provider.dart';
 import '../providers/group_provider.dart';
 
 import '../widgets/optimized_message_list.dart';
+import '../widgets/emoji_picker.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import 'login_page.dart';
@@ -31,7 +34,8 @@ class ChatPage extends StatefulWidget {
   State<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin {
+class _ChatPageState extends State<ChatPage>
+    with AutomaticKeepAliveClientMixin {
   final TextEditingController _textController = TextEditingController();
   final GlobalKey<OptimizedMessageListState> _messageListKey = GlobalKey();
   final ApiService _apiService = ApiService();
@@ -39,6 +43,7 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
   final PerformanceMonitor _performanceMonitor = PerformanceMonitor();
   final ImagePreloader _imagePreloader = ImagePreloader();
   bool _isLoading = false;
+  bool _showEmojiPicker = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -52,25 +57,24 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
     if (widget.conversation.type == ConversationType.group) {
       _loadGroupMembers();
     }
-    
+
     // 清除未读消息计数
     _clearUnreadCount();
-    
+
     _performanceMonitor.endTimer('chat_page_init');
   }
-  
-
 
   Future<void> _loadGroupMembers() async {
     if (widget.conversation.group == null) return;
-    
+
     try {
-      final response = await _apiService.getGroupMembers(widget.conversation.group!.id);
+      final response =
+          await _apiService.getGroupMembers(widget.conversation.group!.id);
       if (response.data['code'] == 0) {
         final members = (response.data['data'] as List)
             .map((json) => User.fromJson(json))
             .toList();
-        
+
         if (mounted) {
           final groupProvider = context.read<GroupProvider>();
           groupProvider.setGroupMembers(widget.conversation.group!.id, members);
@@ -92,52 +96,53 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
   void _setupMessageListener() {
     final userProvider = context.read<UserProvider>();
     final chatProvider = context.read<ChatProvider>();
-    
+
     // 直接监听WebSocket消息流
     if (userProvider.wsService != null) {
       userProvider.wsService!.messageStream.listen((data) {
         final messageType = data['type'] as String?;
-        
+
         if (messageType == 'message') {
           final messageData = data['data'] as Map<String, dynamic>?;
           if (messageData != null) {
             try {
               final message = Message.fromJson(messageData);
-              
+
               // 检查消息是否属于当前会话
               bool isCurrentConversation = false;
               if (widget.conversation.type == ConversationType.private) {
                 // 私聊：检查是否是与当前聊天对象的消息
-                isCurrentConversation = 
-                    (message.fromUserId == widget.conversation.user?.id && 
-                     message.toUserId == userProvider.currentUser?.id) ||
-                    (message.fromUserId == userProvider.currentUser?.id && 
-                     message.toUserId == widget.conversation.user?.id);
+                isCurrentConversation =
+                    (message.fromUserId == widget.conversation.user?.id &&
+                            message.toUserId == userProvider.currentUser?.id) ||
+                        (message.fromUserId == userProvider.currentUser?.id &&
+                            message.toUserId == widget.conversation.user?.id);
               } else if (widget.conversation.type == ConversationType.group) {
                 // 群聊：检查群ID
-                isCurrentConversation = 
-                    message.isGroup && 
+                isCurrentConversation = message.isGroup &&
                     message.groupId == widget.conversation.group?.id;
               }
-              
+
               if (isCurrentConversation) {
-                debugPrint('ChatPage: Received message for current conversation');
-                
+                debugPrint(
+                    'ChatPage: Received message for current conversation');
+
                 // 添加消息到ChatProvider（标记为当前聊天，不增加未读数）
-                chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
-                
+                chatProvider.addMessage(widget.conversation.id, message,
+                    isCurrentChat: true);
+
                 // 自动滚动到底部
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
                     _messageListKey.currentState?.scrollToBottom();
                   }
                 });
-                
+
                 // 预加载图片消息
                 if (message.msgType == MessageType.image) {
                   _imagePreloader.preloadImagesForMessages([message.content]);
                 }
-                
+
                 // 发送消息送达确认和已读确认（如果是接收到的消息）
                 if (message.fromUserId != userProvider.currentUser?.id) {
                   _markMessageAsDelivered(message);
@@ -152,9 +157,10 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
           // 处理消息状态更新
           final msgId = data['msgId'] as String?;
           final status = data['status'] as String?;
-          
-          debugPrint('ChatPage: Received message_status update: msgId=$msgId, status=$status');
-          
+
+          debugPrint(
+              'ChatPage: Received message_status update: msgId=$msgId, status=$status');
+
           if (msgId != null && status != null) {
             _updateMessageStatus(msgId, status);
           } else {
@@ -171,12 +177,10 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
     }
   }
 
-
-
   Future<void> _loadChatHistory() async {
     _performanceMonitor.startTimer('load_chat_history');
     setState(() => _isLoading = true);
-    
+
     // 调试：检查token状态
     final token = await StorageService.getToken();
     print('DEBUG CHAT: Current token: $token');
@@ -203,11 +207,11 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
       setState(() => _isLoading = false);
       return;
     }
-    
+
     try {
       final chatProvider = context.read<ChatProvider>();
       final page = chatProvider.getCurrentPage(widget.conversation.id);
-      
+
       final response = await _apiService.getChatHistory(
         friendId: widget.conversation.type == ConversationType.private
             ? widget.conversation.user?.id
@@ -223,17 +227,17 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
         final messages = (response.data['data']['messages'] as List)
             .map((json) => Message.fromJson(json))
             .toList();
-        
+
         if (mounted) {
           chatProvider.setMessages(widget.conversation.id, messages);
-          
+
           // 检查是否还有更多消息
           final total = response.data['data']['total'] as int? ?? 0;
           chatProvider.setHasMoreMessages(
             widget.conversation.id,
             messages.length < total,
           );
-          
+
           // 预加载图片消息
           final imageUrls = messages
               .where((m) => m.msgType == MessageType.image)
@@ -242,7 +246,7 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
           if (imageUrls.isNotEmpty) {
             _imagePreloader.preloadImagesForMessages(imageUrls);
           }
-          
+
           // 加载完成后滚动到底部
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _messageListKey.currentState?.scrollToBottom(animated: false);
@@ -284,22 +288,22 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
       _performanceMonitor.endTimer('load_chat_history');
     }
   }
-  
+
   Future<void> _loadMoreHistory() async {
     final chatProvider = context.read<ChatProvider>();
-    
+
     // 如果正在加载或没有更多消息，则返回
     if (chatProvider.isLoadingMore(widget.conversation.id) ||
         !chatProvider.hasMoreMessages(widget.conversation.id)) {
       return;
     }
-    
+
     chatProvider.setLoadingMore(widget.conversation.id, true);
-    
+
     try {
       chatProvider.incrementPage(widget.conversation.id);
       final page = chatProvider.getCurrentPage(widget.conversation.id);
-      
+
       final response = await _apiService.getChatHistory(
         friendId: widget.conversation.type == ConversationType.private
             ? widget.conversation.user?.id
@@ -315,13 +319,14 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
         final messages = (response.data['data']['messages'] as List)
             .map((json) => Message.fromJson(json))
             .toList();
-        
+
         if (mounted) {
           // 追加历史消息到列表开头
-          chatProvider.setMessages(widget.conversation.id, messages, append: true);
-          
+          chatProvider.setMessages(widget.conversation.id, messages,
+              append: true);
+
           // 滚动位置由OptimizedMessageList自动处理
-          
+
           // 检查是否还有更多消息
           if (messages.isEmpty) {
             chatProvider.setHasMoreMessages(widget.conversation.id, false);
@@ -352,9 +357,7 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
             ),
           IconButton(
             icon: const Icon(Icons.more_horiz),
-            onPressed: () {
-              // TODO: 显示更多选项
-            },
+            onPressed: _showChatMoreOptions,
           ),
         ],
       ),
@@ -387,66 +390,108 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
     );
   }
 
-
-
   Widget _buildInputArea() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_showEmojiPicker)
+          EmojiPicker(
+            onEmojiSelected: (emoji) {
+              _textController.text += emoji;
+              setState(() {}); // 触发重新构建，更新发送按钮状态
+            },
           ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.add_circle_outline),
-                color: Colors.grey[700],
-                onPressed: _showMoreOptions,
-              ),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: TextField(
-                    controller: _textController,
-                    decoration: const InputDecoration(
-                      hintText: '输入消息...',
-                      border: InputBorder.none,
-                    ),
-                    maxLines: null,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _sendTextMessage(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.sentiment_satisfied_alt),
-                color: Colors.grey[700],
-                onPressed: () {
-                  // TODO: 显示表情选择器
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.send),
-                color: const Color(0xFF07C160),
-                onPressed: _sendTextMessage,
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, -2),
               ),
             ],
           ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    color: isDark ? Colors.white70 : Colors.grey[700],
+                    onPressed: _showMoreOptions,
+                  ),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color:
+                            isDark ? const Color(0xFF3A3A3A) : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: TextField(
+                        controller: _textController,
+                        decoration: InputDecoration(
+                          hintText: '输入消息...',
+                          hintStyle: TextStyle(
+                              color:
+                                  isDark ? Colors.white60 : Colors.grey[500]),
+                          border: InputBorder.none,
+                        ),
+                        style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black87),
+                        maxLines: null,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _sendTextMessage(),
+                        onTap: () {
+                          if (_showEmojiPicker) {
+                            setState(() {
+                              _showEmojiPicker = false;
+                            });
+                          }
+                        },
+                        onChanged: (text) {
+                          setState(() {}); // 触发重新构建，更新发送按钮状态
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: Icon(
+                      _showEmojiPicker
+                          ? Icons.keyboard
+                          : Icons.sentiment_satisfied_alt,
+                      color: _showEmojiPicker
+                          ? const Color(0xFF07C160)
+                          : isDark
+                              ? Colors.white70
+                              : Colors.grey[700],
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showEmojiPicker = !_showEmojiPicker;
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    color: _textController.text.trim().isEmpty
+                        ? (isDark ? Colors.white38 : Colors.grey[400])
+                        : const Color(0xFF07C160),
+                    onPressed: _textController.text.trim().isEmpty
+                        ? null
+                        : _sendTextMessage,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -474,9 +519,7 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
               }),
               _buildOptionItem(Icons.insert_drive_file, '文件', () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('文件功能暂未实现')),
-                );
+                _pickFile();
               }),
             ],
           ),
@@ -515,7 +558,7 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
 
     final userProvider = context.read<UserProvider>();
     final chatProvider = context.read<ChatProvider>();
-    
+
     if (userProvider.currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('用户未登录')),
@@ -541,8 +584,9 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
     );
 
     // 添加到消息列表
-    chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
-    
+    chatProvider.addMessage(widget.conversation.id, tempMessage,
+        isCurrentChat: true);
+
     // 延迟滚动到底部，确保ListView已经重建
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _messageListKey.currentState?.scrollToBottom();
@@ -582,17 +626,20 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
             isRevoked: tempMessage.isRevoked,
             revokeTime: tempMessage.revokeTime,
           );
-          chatProvider.addMessage(widget.conversation.id, updatedMessage, isCurrentChat: true);
+          chatProvider.addMessage(widget.conversation.id, updatedMessage,
+              isCurrentChat: true);
         } else {
           // 使用原来的msgId，更新状态为已发送
           tempMessage.status = MessageStatus.sent;
-          chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
+          chatProvider.addMessage(widget.conversation.id, tempMessage,
+              isCurrentChat: true);
         }
       } else {
         // 发送失败
         tempMessage.status = MessageStatus.failed;
-        chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
-        
+        chatProvider.addMessage(widget.conversation.id, tempMessage,
+            isCurrentChat: true);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('发送失败: ${response.data['message']}')),
@@ -602,8 +649,9 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
     } catch (e) {
       // 发送失败
       tempMessage.status = MessageStatus.failed;
-      chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
-      
+      chatProvider.addMessage(widget.conversation.id, tempMessage,
+          isCurrentChat: true);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('发送失败: $e')),
@@ -612,14 +660,13 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
     }
   }
 
-
-
   void _retryMessage(Message message) async {
     final chatProvider = context.read<ChatProvider>();
-    
+
     // 更新消息状态为发送中
     message.status = MessageStatus.sending;
-    chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
+    chatProvider.addMessage(widget.conversation.id, message,
+        isCurrentChat: true);
 
     try {
       final response = await _apiService.sendMessage(
@@ -631,14 +678,17 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
 
       if (response.data['code'] == 0) {
         message.status = MessageStatus.sent;
-        chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
+        chatProvider.addMessage(widget.conversation.id, message,
+            isCurrentChat: true);
       } else {
         message.status = MessageStatus.failed;
-        chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
+        chatProvider.addMessage(widget.conversation.id, message,
+            isCurrentChat: true);
       }
     } catch (e) {
       message.status = MessageStatus.failed;
-      chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
+      chatProvider.addMessage(widget.conversation.id, message,
+          isCurrentChat: true);
     }
   }
 
@@ -674,7 +724,8 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
         // 检查文件大小
         final file = File(video.path);
         final fileSize = await file.length();
-        if (fileSize > 100 * 1024 * 1024) { // 100MB
+        if (fileSize > 100 * 1024 * 1024) {
+          // 100MB
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('视频文件不能超过100MB')),
@@ -682,7 +733,7 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
           }
           return;
         }
-        
+
         await _sendMediaMessage(video.path, MessageType.video);
       }
     } catch (e) {
@@ -694,10 +745,174 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
     }
   }
 
-  Future<void> _sendMediaMessage(String filePath, MessageType messageType) async {
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        allowMultiple: false,
+        withData: false,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = File(result.files.single.path!);
+        final fileSize = await file.length();
+        if (fileSize > 100 * 1024 * 1024) {
+          // 100MB
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('文件不能超过100MB')),
+            );
+          }
+          return;
+        }
+
+        await _sendFileMessage(file);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('选择文件失败: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendFileMessage(File file) async {
     final userProvider = context.read<UserProvider>();
     final chatProvider = context.read<ChatProvider>();
-    
+
+    if (userProvider.currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('用户未登录')),
+      );
+      return;
+    }
+
+    // 显示上传进度
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('正在上传文件...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      // 上传文件
+      final uploadResponse = await _apiService.uploadFile(
+        file.path,
+        'file',
+      );
+
+      if (mounted) {
+        Navigator.pop(context); // 关闭进度对话框
+      }
+
+      if (uploadResponse.data['code'] == 0) {
+        final fileUrl = uploadResponse.data['data']['url'] as String;
+        final fileName = path.basename(file.path);
+
+        // 创建消息
+        final tempMessage = Message(
+          msgId: DateTime.now().millisecondsSinceEpoch.toString(),
+          fromUserId: userProvider.currentUser!.id,
+          toUserId: widget.conversation.type == ConversationType.private
+              ? widget.conversation.user!.id
+              : 0,
+          msgType: MessageType.file,
+          content: '$fileName|$fileUrl', // 格式：文件名|文件URL
+          isGroup: widget.conversation.type == ConversationType.group,
+          groupId: widget.conversation.type == ConversationType.group
+              ? widget.conversation.group?.id
+              : null,
+          createTime: DateTime.now(),
+          status: MessageStatus.sending,
+        );
+
+        // 添加到消息列表
+        chatProvider.addMessage(widget.conversation.id, tempMessage,
+            isCurrentChat: true);
+        _messageListKey.currentState?.scrollToBottom();
+
+        // 发送消息
+        final response = await _apiService.sendMessage(
+          tempMessage.toUserId,
+          tempMessage.msgType.value,
+          tempMessage.content,
+          groupId: tempMessage.groupId,
+        );
+
+        if (response.data['code'] == 0) {
+          // 获取服务器返回的msgId（如果服务器返回了新的msgId）
+          final serverMsgId = response.data['data']?['msgId'] as String?;
+          if (serverMsgId != null && serverMsgId != tempMessage.msgId) {
+            // 服务器返回了新的msgId，需要更新消息
+            final messages = chatProvider.getMessages(widget.conversation.id);
+            if (messages != null) {
+              messages.removeWhere((m) => m.msgId == tempMessage.msgId);
+              chatProvider.setMessages(widget.conversation.id, messages);
+            }
+            // 创建新消息，使用服务器的msgId
+            final updatedMessage = Message(
+              msgId: serverMsgId,
+              fromUserId: tempMessage.fromUserId,
+              toUserId: tempMessage.toUserId,
+              msgType: tempMessage.msgType,
+              content: tempMessage.content,
+              isGroup: tempMessage.isGroup,
+              groupId: tempMessage.groupId,
+              createTime: tempMessage.createTime,
+              status: MessageStatus.sent,
+              isRevoked: tempMessage.isRevoked,
+              revokeTime: tempMessage.revokeTime,
+            );
+            chatProvider.addMessage(widget.conversation.id, updatedMessage,
+                isCurrentChat: true);
+          } else {
+            // 使用原来的msgId，更新状态为已发送
+            tempMessage.status = MessageStatus.sent;
+            chatProvider.addMessage(widget.conversation.id, tempMessage,
+                isCurrentChat: true);
+          }
+        } else {
+          tempMessage.status = MessageStatus.failed;
+          chatProvider.addMessage(widget.conversation.id, tempMessage,
+              isCurrentChat: true);
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('上传失败: ${uploadResponse.data['message']}')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // 关闭进度对话框
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('上传失败: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendMediaMessage(
+      String filePath, MessageType messageType) async {
+    final userProvider = context.read<UserProvider>();
+    final chatProvider = context.read<ChatProvider>();
+
     if (userProvider.currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('用户未登录')),
@@ -737,7 +952,7 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
         Navigator.pop(context); // 关闭进度对话框
       }
 
-        if (uploadResponse.data['code'] == 0) {
+      if (uploadResponse.data['code'] == 0) {
         final fileUrl = uploadResponse.data['data']['url'] as String;
 
         // 创建消息
@@ -758,7 +973,8 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
         );
 
         // 添加到消息列表
-        chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
+        chatProvider.addMessage(widget.conversation.id, tempMessage,
+            isCurrentChat: true);
         _messageListKey.currentState?.scrollToBottom();
 
         // 发送消息
@@ -793,15 +1009,18 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
               isRevoked: tempMessage.isRevoked,
               revokeTime: tempMessage.revokeTime,
             );
-            chatProvider.addMessage(widget.conversation.id, updatedMessage, isCurrentChat: true);
+            chatProvider.addMessage(widget.conversation.id, updatedMessage,
+                isCurrentChat: true);
           } else {
             // 使用原来的msgId，更新状态为已发送
             tempMessage.status = MessageStatus.sent;
-            chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
+            chatProvider.addMessage(widget.conversation.id, tempMessage,
+                isCurrentChat: true);
           }
         } else {
           tempMessage.status = MessageStatus.failed;
-          chatProvider.addMessage(widget.conversation.id, tempMessage, isCurrentChat: true);
+          chatProvider.addMessage(widget.conversation.id, tempMessage,
+              isCurrentChat: true);
         }
       } else {
         if (mounted) {
@@ -822,12 +1041,71 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
 
   void _showGroupInfo() {
     if (widget.conversation.group == null) return;
-    
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GroupDetailPage(group: widget.conversation.group!),
+        builder: (context) =>
+            GroupDetailPage(group: widget.conversation.group!),
       ),
+    );
+  }
+
+  void _showChatMoreOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.search),
+                title: const Text('搜索聊天记录'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _searchChatHistory();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.notifications),
+                title: const Text('消息免打扰'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _toggleDoNotDisturb();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.block),
+                title: const Text('屏蔽用户'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _blockUser();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _searchChatHistory() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('搜索聊天记录功能开发中...')),
+    );
+  }
+
+  void _toggleDoNotDisturb() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('消息免打扰功能开发中...')),
+    );
+  }
+
+  void _blockUser() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('屏蔽用户功能开发中...')),
     );
   }
 
@@ -845,11 +1123,11 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
         friendId: friendId,
         groupId: groupId,
       );
-      
+
       // 清除本地未读计数
       final chatProvider = context.read<ChatProvider>();
       chatProvider.clearUnreadCount(widget.conversation.id);
-      
+
       // 更新桌面通知状态
       final totalUnread = chatProvider.conversations
           .fold<int>(0, (sum, conv) => sum + conv.unreadCount);
@@ -898,11 +1176,12 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
 
   // 更新消息状态
   void _updateMessageStatus(String msgId, String status) {
-    debugPrint('_updateMessageStatus: msgId=$msgId, status=$status, conversationId=${widget.conversation.id}');
-    
+    debugPrint(
+        '_updateMessageStatus: msgId=$msgId, status=$status, conversationId=${widget.conversation.id}');
+
     final chatProvider = context.read<ChatProvider>();
     MessageStatus newStatus;
-    
+
     switch (status) {
       case 'delivered':
         newStatus = MessageStatus.delivered;
@@ -914,7 +1193,7 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
         debugPrint('_updateMessageStatus: Unknown status: $status');
         return;
     }
-    
+
     // 首先尝试在当前会话中查找消息
     final messages = chatProvider.getMessages(widget.conversation.id);
     if (messages != null) {
@@ -924,19 +1203,23 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
         // 只有当新状态比当前状态更新时才更新
         // sending < sent < delivered < read
         if (_shouldUpdateMessageStatus(message.status, newStatus)) {
-          debugPrint('_updateMessageStatus: Updating message $msgId from ${message.status} to $newStatus');
+          debugPrint(
+              '_updateMessageStatus: Updating message $msgId from ${message.status} to $newStatus');
           message.status = newStatus;
-          chatProvider.addMessage(widget.conversation.id, message, isCurrentChat: true);
+          chatProvider.addMessage(widget.conversation.id, message,
+              isCurrentChat: true);
           return;
         } else {
-          debugPrint('_updateMessageStatus: Status update skipped (current: ${message.status}, new: $newStatus)');
+          debugPrint(
+              '_updateMessageStatus: Status update skipped (current: ${message.status}, new: $newStatus)');
           return;
         }
       }
     }
-    
+
     // 如果当前会话中没有找到，尝试在所有会话中查找
-    debugPrint('_updateMessageStatus: Message $msgId not found in current conversation, searching all conversations');
+    debugPrint(
+        '_updateMessageStatus: Message $msgId not found in current conversation, searching all conversations');
     for (final conversation in chatProvider.conversations) {
       final convMessages = chatProvider.getMessages(conversation.id);
       if (convMessages != null) {
@@ -944,20 +1227,24 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
         if (messageIndex != -1) {
           final message = convMessages[messageIndex];
           if (_shouldUpdateMessageStatus(message.status, newStatus)) {
-            debugPrint('_updateMessageStatus: Found message $msgId in conversation ${conversation.id}, updating status');
+            debugPrint(
+                '_updateMessageStatus: Found message $msgId in conversation ${conversation.id}, updating status');
             message.status = newStatus;
-            chatProvider.addMessage(conversation.id, message, isCurrentChat: conversation.id == widget.conversation.id);
+            chatProvider.addMessage(conversation.id, message,
+                isCurrentChat: conversation.id == widget.conversation.id);
             return;
           }
         }
       }
     }
-    
-    debugPrint('_updateMessageStatus: Message $msgId not found in any conversation');
+
+    debugPrint(
+        '_updateMessageStatus: Message $msgId not found in any conversation');
   }
-  
+
   // 判断是否应该更新消息状态（新状态必须比当前状态更新）
-  bool _shouldUpdateMessageStatus(MessageStatus current, MessageStatus newStatus) {
+  bool _shouldUpdateMessageStatus(
+      MessageStatus current, MessageStatus newStatus) {
     // 状态优先级：sending(0) < sent(1) < delivered(2) < read(3)
     // failed(-1) 不应该被其他状态覆盖（除非是重新发送）
     const statusValues = {
@@ -967,15 +1254,15 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
       MessageStatus.read: 3,
       MessageStatus.failed: -1,
     };
-    
+
     final currentValue = statusValues[current] ?? -1;
     final newValue = statusValues[newStatus] ?? -1;
-    
+
     // 失败状态不应该被其他状态覆盖
     if (current == MessageStatus.failed) {
       return false;
     }
-    
+
     // 新状态值必须大于当前状态值
     return newValue > currentValue;
   }
@@ -983,8 +1270,9 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
   Future<void> _recallMessage(Message message) async {
     final userProvider = context.read<UserProvider>();
     final chatProvider = context.read<ChatProvider>();
-    
-    if (userProvider.currentUser == null || message.fromUserId != userProvider.currentUser!.id) {
+
+    if (userProvider.currentUser == null ||
+        message.fromUserId != userProvider.currentUser!.id) {
       return;
     }
 
@@ -1000,15 +1288,17 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
 
     try {
       final response = await _apiService.recallMessage(message.msgId);
-      
+
       if (response.data['code'] == 0) {
         // 更新消息为已撤回状态
         final recalledMessage = message.copyWithRevoked();
-        chatProvider.addMessage(widget.conversation.id, recalledMessage, isCurrentChat: true);
-        
+        chatProvider.addMessage(widget.conversation.id, recalledMessage,
+            isCurrentChat: true);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('消息已撤回'), backgroundColor: Colors.green),
+            const SnackBar(
+                content: Text('消息已撤回'), backgroundColor: Colors.green),
           );
         }
       } else {
@@ -1030,13 +1320,14 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
   void _handleMessageRecalled(String msgId) {
     final chatProvider = context.read<ChatProvider>();
     final messages = chatProvider.getMessages(widget.conversation.id);
-    
+
     if (messages != null) {
       final messageIndex = messages.indexWhere((m) => m.msgId == msgId);
       if (messageIndex != -1) {
         final message = messages[messageIndex];
         final recalledMessage = message.copyWithRevoked();
-        chatProvider.addMessage(widget.conversation.id, recalledMessage, isCurrentChat: true);
+        chatProvider.addMessage(widget.conversation.id, recalledMessage,
+            isCurrentChat: true);
       }
     }
   }
@@ -1055,7 +1346,8 @@ class _ChatPageState extends State<ChatPage> with AutomaticKeepAliveClientMixin 
     // 从本地消息列表中删除（仅前端删除，不调用API）
     final messages = chatProvider.getMessages(widget.conversation.id);
     if (messages != null) {
-      final updatedMessages = messages.where((m) => m.msgId != message.msgId).toList();
+      final updatedMessages =
+          messages.where((m) => m.msgId != message.msgId).toList();
       chatProvider.setMessages(widget.conversation.id, updatedMessages);
     }
   }

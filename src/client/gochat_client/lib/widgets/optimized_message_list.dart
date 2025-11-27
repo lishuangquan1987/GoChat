@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../models/message.dart';
 import '../providers/chat_provider.dart';
@@ -40,6 +41,7 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
   final LazyLoadingManager _lazyLoadingManager = LazyLoadingManager();
   final PerformanceMonitor _performanceMonitor = PerformanceMonitor();
   bool _isLoadingMore = false;
+  bool _isScrolling = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -60,17 +62,24 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
   void _setupScrollListener() {
     _scrollController.addListener(() {
       _performanceMonitor.startTimer('message_list_scroll');
-      
+
+      // 检查用户是否正在滚动
+      if (_scrollController.position.userScrollDirection !=
+              AxisDirection.down &&
+          _scrollController.position.userScrollDirection != AxisDirection.up) {
+        _isScrolling = true;
+      }
+
       // 当滚动到顶部附近时触发加载更多
-      if (_scrollController.position.pixels <= 100 && 
-          !_isLoadingMore && 
+      if (_scrollController.position.pixels <= 100 &&
+          !_isLoadingMore &&
           widget.onLoadMore != null) {
         _loadMore();
       }
-      
+
       // 检查是否需要预加载
       _checkPreloadTrigger();
-      
+
       // 延迟结束计时
       Future.delayed(const Duration(milliseconds: 50), () {
         _performanceMonitor.endTimer('message_list_scroll');
@@ -83,7 +92,7 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
     final messages = chatProvider.getMessages(widget.conversationId) ?? [];
     final currentPage = chatProvider.getCurrentPage(widget.conversationId);
     final hasMore = chatProvider.hasMoreMessages(widget.conversationId);
-    
+
     if (_lazyLoadingManager.shouldPreload(
       conversationId: widget.conversationId,
       currentMessageCount: messages.length,
@@ -97,7 +106,7 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
   void _triggerPreload() {
     final chatProvider = context.read<ChatProvider>();
     final currentPage = chatProvider.getCurrentPage(widget.conversationId);
-    
+
     _lazyLoadingManager.preloadMessages(
       conversationId: widget.conversationId,
       currentPage: currentPage,
@@ -108,9 +117,9 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
 
   Future<void> _loadMore() async {
     if (_isLoadingMore) return;
-    
+
     setState(() => _isLoadingMore = true);
-    
+
     try {
       await widget.onLoadMore?.call();
     } finally {
@@ -120,25 +129,33 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
     }
   }
 
-  void scrollToBottom({bool animated = true}) {
+  void scrollToBottom({bool animated = true, bool force = false}) {
+    // 如果用户正在滚动，不要自动滚动到底部（除非强制）
+    if (_isScrolling && !force) return;
+
     if (!_scrollController.hasClients) return;
-    
-    // 由于ListView使用了reverse=true，滚动到底部实际上是滚动到0位置
-    if (animated) {
-      _scrollController.animateTo(
-        0.0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    } else {
-      _scrollController.jumpTo(0.0);
-    }
+
+    // 添加一个小延迟确保widget已经构建完成
+    Future.delayed(Duration.zero, () {
+      if (!_scrollController.hasClients) return;
+
+      // 由于ListView的reverse=true，最新消息在底部，所以滚动到0.0就是滚动到底部
+      if (animated) {
+        _scrollController.animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(0.0);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    
+
     return Consumer3<ChatProvider, UserProvider, GroupProvider>(
       builder: (context, chatProvider, userProvider, groupProvider, child) {
         final messages = chatProvider.getMessages(widget.conversationId) ?? [];
@@ -154,68 +171,82 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
           );
         }
 
-        return ListView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          // 反向显示，最新消息在底部
-          reverse: true,
-          // 使用缓存范围来提高性能
-          cacheExtent: 1000,
-          itemCount: messages.length + (hasMore ? 1 : 0),
-          itemBuilder: (context, index) {
-            // 由于reverse=true，需要调整索引
-            if (index == messages.length && hasMore) {
-              // 显示加载更多指示器
-              return Container(
-                padding: const EdgeInsets.all(16),
-                alignment: Alignment.center,
-                child: isLoadingMore
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(
-                        '上拉加载更多',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
-              );
+        return NotificationListener<UserScrollNotification>(
+          onNotification: (notification) {
+            // 当用户停止滚动时，重置滚动状态
+            if (notification.direction.index == 0) {
+              // 0 is the index for ScrollDirection.idle
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (mounted) {
+                  setState(() {
+                    _isScrolling = false;
+                  });
+                }
+              });
             }
+            return true;
+          },
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            // 反向显示，最新消息在底部
+            reverse: true,
+            // 使用缓存范围来提高性能
+            cacheExtent: 1000,
+            itemCount: messages.length + (hasMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              // 由于reverse=true，需要调整索引
+              if (index == messages.length && hasMore) {
+                // 显示加载更多指示器
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  alignment: Alignment.center,
+                  child: isLoadingMore
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          '上拉加载更多',
+                          style:
+                              TextStyle(color: Colors.grey[600], fontSize: 12),
+                        ),
+                );
+              }
 
-            // 反向索引
-            final messageIndex = messages.length - 1 - index;
-            final message = messages[messageIndex];
-            final isMine = message.fromUserId == userProvider.currentUser?.id;
+              // 反向索引
+              final messageIndex = messages.length - 1 - index;
+              final message = messages[messageIndex];
+              final isMine = message.fromUserId == userProvider.currentUser?.id;
 
-            // 获取发送者昵称（用于群聊）
-            String? senderNickname;
-            if (widget.isGroupChat && !isMine && widget.groupId != null) {
-              final members = groupProvider.getGroupMembers(widget.groupId!);
-              if (members != null) {
-                try {
-                  final sender = members.firstWhere((m) => m.id == message.fromUserId);
-                  senderNickname = sender.nickname;
-                } catch (e) {
-                  senderNickname = '用户${message.fromUserId}';
+              // 获取发送者昵称（用于群聊）
+              String? senderNickname;
+              if (widget.isGroupChat && !isMine && widget.groupId != null) {
+                final members = groupProvider.getGroupMembers(widget.groupId!);
+                if (members != null) {
+                  try {
+                    final sender =
+                        members.firstWhere((m) => m.id == message.fromUserId);
+                    senderNickname = sender.nickname;
+                  } catch (e) {
+                    senderNickname = '用户${message.fromUserId}';
+                  }
                 }
               }
-            }
 
-            return MessageBubbleWrapper(
-              key: ValueKey(message.msgId),
-              message: message,
-              isMine: isMine,
-              isGroupChat: widget.isGroupChat,
-              senderNickname: senderNickname,
-              currentUserId: userProvider.currentUser?.id,
-              onRetry: message.status == MessageStatus.failed && isMine
-                  ? () => widget.onRetryMessage?.call(message)
-                  : null,
-              onRecall: () => widget.onRecallMessage?.call(message),
-              onCopy: () => widget.onCopyMessage?.call(message),
-              onDelete: () => widget.onDeleteMessage?.call(message),
-            );
-          },
+              return MessageBubbleWrapper(
+                key: ValueKey(message.msgId),
+                message: message,
+                isMine: isMine,
+                isGroupChat: widget.isGroupChat,
+                senderNickname: senderNickname,
+                onRetry: message.status == MessageStatus.failed && isMine
+                    ? () => widget.onRetryMessage?.call(message)
+                    : null,
+              );
+            },
+          ),
         );
       },
     );
@@ -229,10 +260,6 @@ class MessageBubbleWrapper extends StatelessWidget {
   final bool isGroupChat;
   final String? senderNickname;
   final VoidCallback? onRetry;
-  final VoidCallback? onRecall;
-  final VoidCallback? onCopy;
-  final VoidCallback? onDelete;
-  final int? currentUserId;
 
   const MessageBubbleWrapper({
     Key? key,
@@ -241,10 +268,6 @@ class MessageBubbleWrapper extends StatelessWidget {
     required this.isGroupChat,
     this.senderNickname,
     this.onRetry,
-    this.onRecall,
-    this.onCopy,
-    this.onDelete,
-    this.currentUserId,
   }) : super(key: key);
 
   @override
@@ -255,10 +278,6 @@ class MessageBubbleWrapper extends StatelessWidget {
       isGroupChat: isGroupChat,
       senderNickname: senderNickname,
       onRetry: onRetry,
-      onRecall: onRecall,
-      onCopy: onCopy,
-      onDelete: onDelete,
-      currentUserId: currentUserId,
     );
   }
 }

@@ -278,6 +278,8 @@ class _ConversationItemState extends State<ConversationItem>
         return '[图片]';
       case MessageType.video:
         return '[视频]';
+      case MessageType.file:
+        return '[文件]';
     }
   }
 

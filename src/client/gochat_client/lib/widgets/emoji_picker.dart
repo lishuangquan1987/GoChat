@@ -93,14 +93,16 @@ class _EmojiPickerState extends State<EmojiPicker> with TickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       height: 300,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -114,7 +116,7 @@ class _EmojiPickerState extends State<EmojiPicker> with TickerProviderStateMixin
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: isDark ? Colors.grey[700] : Colors.grey[300],
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -122,7 +124,7 @@ class _EmojiPickerState extends State<EmojiPicker> with TickerProviderStateMixin
           Container(
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Colors.grey[200]!),
+                bottom: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey[200]!),
               ),
             ),
             child: TabBar(
@@ -130,7 +132,7 @@ class _EmojiPickerState extends State<EmojiPicker> with TickerProviderStateMixin
               isScrollable: true,
               indicatorColor: const Color(0xFF07C160),
               labelColor: const Color(0xFF07C160),
-              unselectedLabelColor: Colors.grey[600],
+              unselectedLabelColor: isDark ? Colors.white70 : Colors.grey[600],
               tabs: _categories.map((category) => Tab(
                 child: Text(
                   category.icon,
@@ -143,7 +145,7 @@ class _EmojiPickerState extends State<EmojiPicker> with TickerProviderStateMixin
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: _categories.map((category) => _buildEmojiGrid(category)).toList(),
+              children: _categories.map((category) => _buildEmojiGrid(category, isDark)).toList(),
             ),
           ),
         ],
@@ -151,7 +153,7 @@ class _EmojiPickerState extends State<EmojiPicker> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildEmojiGrid(EmojiCategory category) {
+  Widget _buildEmojiGrid(EmojiCategory category, bool isDark) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -169,7 +171,7 @@ class _EmojiPickerState extends State<EmojiPicker> with TickerProviderStateMixin
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: Colors.grey[50],
+              color: isDark ? const Color(0xFF3A3A3A) : Colors.grey[50],
             ),
             child: Center(
               child: Text(

@@ -254,6 +254,8 @@ class MessageBubble extends StatelessWidget {
         return _buildImageContent();
       case MessageType.video:
         return _buildVideoContent();
+      case MessageType.file:
+        return _buildFileContent();
     }
   }
 
@@ -313,6 +315,62 @@ class MessageBubble extends StatelessWidget {
                   style: TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileContent() {
+    // 解析文件内容：格式为 文件名|文件URL
+    final parts = message.content.split('|');
+    final fileName = parts.isNotEmpty ? parts[0] : '未知文件';
+    final fileUrl = parts.length > 1 ? parts[1] : '';
+
+    return GestureDetector(
+      onTap: () {
+        // TODO: 实现文件下载
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.grey[200],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.insert_drive_file, size: 24, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    fileName,
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '点击下载',
+                    style: TextStyle(fontSize: 12, color: Colors.blue),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.download, size: 16, color: Colors.blue),
+                  onPressed: () {
+                    // TODO: 实现文件下载
+                  },
+                ),
+              ],
             ),
           ],
         ),

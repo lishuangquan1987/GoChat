@@ -19,11 +19,11 @@ import 'utils/image_cache_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 初始化窗口管理器（仅桌面平台）
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await windowManager.ensureInitialized();
-    
+
     WindowOptions windowOptions = const WindowOptions(
       size: Size(1200, 800),
       minimumSize: Size(800, 600),
@@ -33,23 +33,23 @@ void main() async {
       titleBarStyle: TitleBarStyle.normal,
       windowButtonVisibility: true,
     );
-    
+
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
     });
   }
-  
+
   // 初始化存储服务
   await StorageService.init();
-  
+
   // 初始化设置
   final settingsProvider = settings_provider.SettingsProvider();
   await settingsProvider.initialize();
-  
+
   // 初始化图片缓存管理器
   ImageCacheManager().initialize();
-  
+
   // 设置系统UI样式
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -57,16 +57,16 @@ void main() async {
       statusBarIconBrightness: Brightness.light,
     ),
   );
-  
+
   // 启动性能监控（仅在调试模式下）
   if (kDebugMode) {
     final monitor = PerformanceMonitor();
-    
+
     // 定期检查内存使用
     Timer.periodic(const Duration(seconds: 30), (_) {
       monitor.checkMemoryUsage();
     });
-    
+
     // 监控帧率
     WidgetsBinding.instance.addTimingsCallback((timings) {
       for (final timing in timings) {
@@ -74,13 +74,13 @@ void main() async {
       }
     });
   }
-  
+
   runApp(MyApp(settingsProvider: settingsProvider));
 }
 
 class MyApp extends StatelessWidget {
   final settings_provider.SettingsProvider settingsProvider;
-  
+
   const MyApp({super.key, required this.settingsProvider});
 
   @override
@@ -112,15 +112,17 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  ThemeData _buildTheme(settings_provider.SettingsProvider settings, bool isDark) {
+  ThemeData _buildTheme(
+      settings_provider.SettingsProvider settings, bool isDark) {
     final primaryColor = settings.primaryColor;
     final brightness = isDark ? Brightness.dark : Brightness.light;
-    
+
     return ThemeData(
       brightness: brightness,
       primarySwatch: _createMaterialColor(primaryColor),
       primaryColor: primaryColor,
-      scaffoldBackgroundColor: isDark ? const Color(0xFF121212) : const Color(0xFFEDEDED),
+      scaffoldBackgroundColor:
+          isDark ? const Color(0xFF1E1E1E) : const Color(0xFFEDEDED),
       appBarTheme: AppBarTheme(
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
@@ -130,6 +132,8 @@ class MyApp extends StatelessWidget {
         seedColor: primaryColor,
         primary: primaryColor,
         brightness: brightness,
+        surface: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+        onSurface: isDark ? Colors.white : Colors.black87,
       ),
       useMaterial3: true,
     );
@@ -138,12 +142,14 @@ class MyApp extends StatelessWidget {
   MaterialColor _createMaterialColor(Color color) {
     final strengths = <double>[.05];
     final swatch = <int, Color>{};
-    final int r = color.red, g = color.green, b = color.blue;
+    final int r = (color.r * 255.0).round() & 0xff;
+    final int g = (color.g * 255.0).round() & 0xff;
+    final int b = (color.b * 255.0).round() & 0xff;
 
     for (int i = 1; i < 10; i++) {
       strengths.add(0.1 * i);
     }
-    
+
     for (final strength in strengths) {
       final double ds = 0.5 - strength;
       swatch[(strength * 1000).round()] = Color.fromRGBO(
@@ -153,8 +159,8 @@ class MyApp extends StatelessWidget {
         1,
       );
     }
-    
-    return MaterialColor(color.value, swatch);
+
+    return MaterialColor(color.toARGB32(), swatch);
   }
 
   ThemeMode _getThemeMode(settings_provider.ThemeMode mode) {
@@ -178,40 +184,49 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
+  Timer? _timer;
+
   @override
   void initState() {
     super.initState();
     _checkLoginStatus();
   }
 
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _checkLoginStatus() async {
-    await Future.delayed(const Duration(seconds: 1));
-    
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    
-    // 检查是否有多个用户
-    final allUsers = await userProvider.getAllUsers();
-    
-    if (allUsers.length > 1) {
-      // 有多个用户，显示用户选择页面
+    _timer = Timer(const Duration(seconds: 1), () async {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+
+      // 检查是否有多个用户
+      final allUsers = await userProvider.getAllUsers();
+
+      if (allUsers.length > 1) {
+        // 有多个用户，显示用户选择页面
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const UserSwitcherPage()),
+          );
+        }
+        return;
+      }
+
+      // 只有一个或没有用户，按原逻辑处理
+      final isLoggedIn = await userProvider.checkLoginStatus();
+
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const UserSwitcherPage()),
+          MaterialPageRoute(
+            builder: (context) =>
+                isLoggedIn ? const HomePage() : const LoginPage(),
+          ),
         );
       }
-      return;
-    }
-    
-    // 只有一个或没有用户，按原逻辑处理
-    final isLoggedIn = await userProvider.checkLoginStatus();
-    
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => isLoggedIn ? const HomePage() : const LoginPage(),
-        ),
-      );
-    }
+    });
   }
 
   @override
@@ -225,7 +240,7 @@ class _SplashPageState extends State<SplashPage> {
             Icon(
               Icons.chat_bubble_outline,
               size: 100,
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
             ),
             const SizedBox(height: 20),
             const Text(
