@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
@@ -25,6 +26,12 @@ class StorageService {
   }
 
   static Future<void> _initUserDataDirectory() async {
+    // 在Web平台上，跳过文件系统初始化
+    if (kIsWeb) {
+      _userDataDir = null;
+      return;
+    }
+
     try {
       final appDir = await getApplicationDocumentsDirectory();
       _userDataDir = '${appDir.path}/GoChat';

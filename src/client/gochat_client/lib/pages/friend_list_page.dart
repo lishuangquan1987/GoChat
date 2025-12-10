@@ -320,8 +320,8 @@ class _FriendListPageState extends State<FriendListPage> {
                 // 好友请求入口 - 始终显示，有请求时高亮
                 Container(
                   color: friendProvider.pendingRequestCount > 0 
-                      ? Colors.orange[50] 
-                      : Colors.white,
+                      ? Theme.of(context).colorScheme.surfaceVariant
+                      : Theme.of(context).colorScheme.surface,
                   child: ListTile(
                     leading: Stack(
                       children: [
@@ -374,10 +374,10 @@ class _FriendListPageState extends State<FriendListPage> {
                       subtitle: friendProvider.pendingRequestCount > 0 
                           ? const Text('有新的好友请求', style: TextStyle(color: Color(0xFFFF9500))) 
                           : null,
-                      trailing: const Icon(Icons.chevron_right),
+                      trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       onTap: () {
                         Navigator.push(
-                          context,
+                          context, 
                           MaterialPageRoute(
                             builder: (context) => const FriendRequestsPage(),
                           ),
@@ -403,12 +403,12 @@ class _FriendListPageState extends State<FriendListPage> {
                   )
                 else
                   Container(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     child: ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: friendProvider.friends.length,
-                      separatorBuilder: (context, index) => const Divider(height: 1, indent: 72),
+                      separatorBuilder: (context, index) => Divider(height: 1, indent: 72, color: Theme.of(context).colorScheme.surfaceVariant),
                       itemBuilder: (context, index) {
                         final friend = friendProvider.friends[index];
                         return ListTile(
@@ -430,10 +430,10 @@ class _FriendListPageState extends State<FriendListPage> {
                             future: _getFriendDisplayInfo(friend.id),
                             builder: (context, snapshot) {
                               final displayName = snapshot.data?['displayName'] as String? ?? friend.nickname;
-                              return Text(displayName);
+                              return Text(displayName, style: TextStyle(color: Theme.of(context).colorScheme.onSurface));
                             },
                           ),
-                          subtitle: Text('ID: ${friend.id}'),
+                          subtitle: Text('ID: ${friend.id}', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                           trailing: friend.status != null
                               ? Container(
                                   width: 8,

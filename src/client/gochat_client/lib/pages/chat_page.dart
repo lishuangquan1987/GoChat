@@ -44,6 +44,8 @@ class _ChatPageState extends State<ChatPage>
   final ImagePreloader _imagePreloader = ImagePreloader();
   bool _isLoading = false;
   bool _showEmojiPicker = false;
+  Message? _quotedMessage;
+  bool _isQuoting = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -143,10 +145,11 @@ class _ChatPageState extends State<ChatPage>
                   _imagePreloader.preloadImagesForMessages([message.content]);
                 }
 
-                // 发送消息送达确认和已读确认（如果是接收到的消息）
+                // 发送消息送达确认（如果是接收到的消息）
                 if (message.fromUserId != userProvider.currentUser?.id) {
                   _markMessageAsDelivered(message);
-                  _markMessageAsRead(message);
+                  // 已读确认不在这里发送，而是在用户进入聊天页面时通过_markAllMessagesAsRead发送
+                  // 这样可以确保只有用户真正查看了消息才会显示已读状态
                 }
               }
             } catch (e) {
@@ -377,16 +380,30 @@ class _ChatPageState extends State<ChatPage>
       return const Center(child: CircularProgressIndicator());
     }
 
-    return OptimizedMessageList(
-      key: _messageListKey,
-      conversationId: widget.conversation.id,
-      isGroupChat: widget.conversation.type == ConversationType.group,
-      groupId: widget.conversation.group?.id,
-      onLoadMore: _loadMoreHistory,
-      onRetryMessage: _retryMessage,
-      onRecallMessage: _recallMessage,
-      onCopyMessage: _copyMessage,
-      onDeleteMessage: _deleteMessage,
+    return GestureDetector(
+      onTap: () {
+        // 点击消息列表区域关闭表情包
+        if (_showEmojiPicker) {
+          setState(() {
+            _showEmojiPicker = false;
+          });
+        }
+      },
+      child: Consumer<UserProvider>(
+        builder: (context, userProvider, _) => OptimizedMessageList(
+          key: _messageListKey,
+          conversationId: widget.conversation.id,
+          isGroupChat: widget.conversation.type == ConversationType.group,
+          groupId: widget.conversation.group?.id,
+          onLoadMore: _loadMoreHistory,
+          onRetryMessage: _retryMessage,
+          onRecallMessage: _recallMessage,
+          onCopyMessage: _copyMessage,
+          onDeleteMessage: _deleteMessage,
+          onQuoteMessage: _quoteMessage,
+          currentUserId: userProvider.currentUser?.id,
+        ),
+      ),
     );
   }
 
@@ -397,96 +414,167 @@ class _ChatPageState extends State<ChatPage>
       mainAxisSize: MainAxisSize.min,
       children: [
         if (_showEmojiPicker)
-          EmojiPicker(
-            onEmojiSelected: (emoji) {
-              _textController.text += emoji;
-              setState(() {}); // 触发重新构建，更新发送按钮状态
+          GestureDetector(
+            onTap: () {
+              // 点击表情包区域不关闭
             },
+            child: EmojiPicker(
+              onEmojiSelected: (emoji) {
+                _textController.text += emoji;
+                setState(() {}); // 触发重新构建，更新发送按钮状态
+              },
+            ),
           ),
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    color: isDark ? Colors.white70 : Colors.grey[700],
-                    onPressed: _showMoreOptions,
-                  ),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color:
-                            isDark ? const Color(0xFF3A3A3A) : Colors.grey[100],
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: TextField(
-                        controller: _textController,
-                        decoration: InputDecoration(
-                          hintText: '输入消息...',
-                          hintStyle: TextStyle(
-                              color:
-                                  isDark ? Colors.white60 : Colors.grey[500]),
-                          border: InputBorder.none,
+        GestureDetector(
+          onTap: () {
+            // 点击输入区域关闭表情包
+            if (_showEmojiPicker) {
+              setState(() {
+                _showEmojiPicker = false;
+              });
+            }
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2D2D2D) : Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 引用消息显示
+                    if (_quotedMessage != null)
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF3A3A3A) : Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF07C160)),
                         ),
-                        style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black87),
-                        maxLines: null,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _sendTextMessage(),
-                        onTap: () {
-                          if (_showEmojiPicker) {
-                            setState(() {
-                              _showEmojiPicker = false;
-                            });
-                          }
-                        },
-                        onChanged: (text) {
-                          setState(() {}); // 触发重新构建，更新发送按钮状态
-                        },
+                        child: Row(
+                          children: [
+                            const Icon(Icons.format_quote, color: Color(0xFF07C160), size: 16),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _quotedMessage!.fromUserId == context.read<UserProvider>().currentUser?.id
+                                        ? '我'
+                                        : widget.conversation.user?.nickname ?? '对方',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark ? Colors.white70 : Colors.grey[700],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    _quotedMessage!.msgType == MessageType.text
+                                        ? _quotedMessage!.content
+                                        : '${_quotedMessage!.msgType.value}消息',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, size: 16, color: Colors.grey),
+                              onPressed: _clearQuotedMessage,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
                       ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          color: isDark ? Colors.white70 : Colors.grey[700],
+                          onPressed: _showMoreOptions,
+                        ),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color:
+                                  isDark ? const Color(0xFF3A3A3A) : Colors.grey[100],
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: TextField(
+                              controller: _textController,
+                              decoration: InputDecoration(
+                                hintText: '输入消息...',
+                                hintStyle: TextStyle(
+                                    color:
+                                        isDark ? Colors.white60 : Colors.grey[500]),
+                                border: InputBorder.none,
+                              ),
+                              style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black87),
+                              maxLines: null,
+                              textInputAction: TextInputAction.send,
+                              onSubmitted: (_) => _sendTextMessage(),
+                              onTap: () {
+                                if (_showEmojiPicker) {
+                                  setState(() {
+                                    _showEmojiPicker = false;
+                                  });
+                                }
+                              },
+                              onChanged: (text) {
+                                setState(() {}); // 触发重新构建，更新发送按钮状态
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(
+                            _showEmojiPicker
+                                ? Icons.keyboard
+                                : Icons.sentiment_satisfied_alt,
+                            color: _showEmojiPicker
+                                ? const Color(0xFF07C160)
+                                : isDark
+                                    ? Colors.white70
+                                    : Colors.grey[700],
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _showEmojiPicker = !_showEmojiPicker;
+                            });
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.send),
+                          color: _textController.text.trim().isEmpty
+                              ? (isDark ? Colors.white38 : Colors.grey[400])
+                              : const Color(0xFF07C160),
+                          onPressed: _textController.text.trim().isEmpty
+                              ? null
+                              : _sendTextMessage,
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: Icon(
-                      _showEmojiPicker
-                          ? Icons.keyboard
-                          : Icons.sentiment_satisfied_alt,
-                      color: _showEmojiPicker
-                          ? const Color(0xFF07C160)
-                          : isDark
-                              ? Colors.white70
-                              : Colors.grey[700],
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _showEmojiPicker = !_showEmojiPicker;
-                      });
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    color: _textController.text.trim().isEmpty
-                        ? (isDark ? Colors.white38 : Colors.grey[400])
-                        : const Color(0xFF07C160),
-                    onPressed: _textController.text.trim().isEmpty
-                        ? null
-                        : _sendTextMessage,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -556,6 +644,10 @@ class _ChatPageState extends State<ChatPage>
 
     _textController.clear();
 
+    // 保存引用消息并清除
+    final quotedMessage = _quotedMessage;
+    _clearQuotedMessage();
+
     final userProvider = context.read<UserProvider>();
     final chatProvider = context.read<ChatProvider>();
 
@@ -581,6 +673,11 @@ class _ChatPageState extends State<ChatPage>
           : null,
       createTime: DateTime.now(),
       status: MessageStatus.sending,
+      quotedMsgId: quotedMessage?.msgId,
+      quotedContent: quotedMessage?.msgType == MessageType.text
+          ? quotedMessage?.content
+          : '${quotedMessage?.msgType.value}消息',
+      quotedFromUserId: quotedMessage?.fromUserId,
     );
 
     // 添加到消息列表
@@ -599,6 +696,7 @@ class _ChatPageState extends State<ChatPage>
         tempMessage.msgType.value,
         tempMessage.content,
         groupId: tempMessage.groupId,
+        quotedMsgId: quotedMessage?.msgId,
       );
 
       if (response.data['code'] == 0) {
@@ -625,6 +723,9 @@ class _ChatPageState extends State<ChatPage>
             status: MessageStatus.sent,
             isRevoked: tempMessage.isRevoked,
             revokeTime: tempMessage.revokeTime,
+            quotedMsgId: tempMessage.quotedMsgId,
+            quotedContent: tempMessage.quotedContent,
+            quotedFromUserId: tempMessage.quotedFromUserId,
           );
           chatProvider.addMessage(widget.conversation.id, updatedMessage,
               isCurrentChat: true);
@@ -1346,9 +1447,29 @@ class _ChatPageState extends State<ChatPage>
     // 从本地消息列表中删除（仅前端删除，不调用API）
     final messages = chatProvider.getMessages(widget.conversation.id);
     if (messages != null) {
-      final updatedMessages =
+      final updatedMessages = 
           messages.where((m) => m.msgId != message.msgId).toList();
       chatProvider.setMessages(widget.conversation.id, updatedMessages);
     }
+  }
+
+  void _quoteMessage(Message message) {
+    setState(() {
+      _quotedMessage = message;
+      _isQuoting = true;
+    });
+    // 关闭表情包
+    if (_showEmojiPicker) {
+      setState(() {
+        _showEmojiPicker = false;
+      });
+    }
+  }
+
+  void _clearQuotedMessage() {
+    setState(() {
+      _quotedMessage = null;
+      _isQuoting = false;
+    });
   }
 }

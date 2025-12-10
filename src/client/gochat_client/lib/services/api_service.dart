@@ -2,8 +2,8 @@ import 'package:dio/dio.dart';
 import 'storage_service.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:8080/api';
-  
+  static const String baseUrl = 'http://8.134.114.124:8088/api';
+
   late final Dio _dio;
 
   ApiService() {
@@ -33,9 +33,11 @@ class ApiService {
       },
       onError: (error, handler) async {
         // 统一错误处理
-        print('DEBUG API: Error occurred: ${error.response?.statusCode} - ${error.message}');
+        print(
+            'DEBUG API: Error occurred: ${error.response?.statusCode} - ${error.message}');
         if (error.response?.statusCode == 401) {
-          print('DEBUG API: 401 Unauthorized - Token may be invalid or expired');
+          print(
+              'DEBUG API: 401 Unauthorized - Token may be invalid or expired');
           // 清除无效的token和用户数据
           await StorageService.deleteToken();
           await StorageService.deleteUser();
@@ -47,7 +49,8 @@ class ApiService {
   }
 
   // 用户相关
-  Future<Response> register(String username, String password, String nickname, int sex) {
+  Future<Response> register(
+      String username, String password, String nickname, int sex) {
     return _dio.post('/user/register', data: {
       'username': username,
       'password': password,
@@ -94,7 +97,8 @@ class ApiService {
     return _dio.put('/user/profile', data: data);
   }
 
-  Future<Response> searchUsers(String keyword, {bool excludeFriends = false, int limit = 20}) {
+  Future<Response> searchUsers(String keyword,
+      {bool excludeFriends = false, int limit = 20}) {
     return _dio.get('/user/search', queryParameters: {
       'keyword': keyword,
       'excludeFriends': excludeFriends,
@@ -138,7 +142,8 @@ class ApiService {
     return _dio.delete('/friends/$friendId');
   }
 
-  Future<Response> updateFriendRemark(int friendId, {
+  Future<Response> updateFriendRemark(
+    int friendId, {
     String? remarkName,
     String? category,
     List<String>? tags,
@@ -155,16 +160,19 @@ class ApiService {
   }
 
   // 消息相关
-  Future<Response> sendMessage(int toUserId, int msgType, String content, {int? groupId}) {
+  Future<Response> sendMessage(int toUserId, int msgType, String content,
+      {int? groupId, String? quotedMsgId}) {
     return _dio.post('/messages/send', data: {
       'toUserId': toUserId,
       'msgType': msgType,
       'content': content,
       if (groupId != null) 'groupId': groupId,
+      if (quotedMsgId != null) 'quotedMsgId': quotedMsgId,
     });
   }
 
-  Future<Response> getChatHistory({int? friendId, int? groupId, int page = 1, int pageSize = 20}) {
+  Future<Response> getChatHistory(
+      {int? friendId, int? groupId, int page = 1, int pageSize = 20}) {
     return _dio.get('/messages/history', queryParameters: {
       if (friendId != null) 'friendId': friendId,
       if (groupId != null) 'groupId': groupId,

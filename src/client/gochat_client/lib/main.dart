@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:window_manager/window_manager.dart';
 import 'providers/user_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/friend_provider.dart';
@@ -19,26 +18,6 @@ import 'utils/image_cache_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 初始化窗口管理器（仅桌面平台）
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    await windowManager.ensureInitialized();
-
-    WindowOptions windowOptions = const WindowOptions(
-      size: Size(1200, 800),
-      minimumSize: Size(800, 600),
-      center: true,
-      backgroundColor: Colors.transparent,
-      skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.normal,
-      windowButtonVisibility: true,
-    );
-
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.show();
-      await windowManager.focus();
-    });
-  }
 
   // 初始化存储服务
   await StorageService.init();
@@ -61,11 +40,6 @@ void main() async {
   // 启动性能监控（仅在调试模式下）
   if (kDebugMode) {
     final monitor = PerformanceMonitor();
-
-    // 定期检查内存使用
-    Timer.periodic(const Duration(seconds: 30), (_) {
-      monitor.checkMemoryUsage();
-    });
 
     // 监控帧率
     WidgetsBinding.instance.addTimingsCallback((timings) {

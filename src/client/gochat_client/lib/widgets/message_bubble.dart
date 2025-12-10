@@ -13,6 +13,7 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback? onRecall;
   final VoidCallback? onCopy;
   final VoidCallback? onDelete;
+  final VoidCallback? onQuote;
   final int? currentUserId;
 
   const MessageBubble({
@@ -25,6 +26,7 @@ class MessageBubble extends StatelessWidget {
     this.onRecall,
     this.onCopy,
     this.onDelete,
+    this.onQuote,
     this.currentUserId,
   }) : super(key: key);
 
@@ -54,7 +56,12 @@ class MessageBubble extends StatelessWidget {
                       ),
                     ),
                   ),
-                _buildMessageContent(context),
+                GestureDetector(
+                  onLongPress: () {
+                    _showContextMenu(context);
+                  },
+                  child: _buildMessageContent(context),
+                ),
                 const SizedBox(height: 4),
                 _buildMessageInfo(),
               ],
@@ -65,6 +72,85 @@ class MessageBubble extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _showContextMenu(BuildContext context) {
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final RenderBox box = context.findRenderObject() as RenderBox;
+    final Offset offset = box.localToGlobal(Offset.zero, ancestor: overlay);
+
+    showMenu(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromPoints(offset, offset.translate(box.size.width, box.size.height)),
+        Rect.fromLTWH(0, 0, overlay.size.width, overlay.size.height),
+      ),
+      items: [
+        // 复制消息
+        if (message.msgType == MessageType.text)
+          PopupMenuItem(
+            value: 'copy',
+            child: Row(
+              children: const [
+                Icon(Icons.content_copy, size: 16),
+                SizedBox(width: 8),
+                Text('复制'),
+              ],
+            ),
+          ),
+        // 引用消息
+        PopupMenuItem(
+          value: 'quote',
+          child: Row(
+            children: const [
+              Icon(Icons.format_quote, size: 16),
+              SizedBox(width: 8),
+              Text('引用'),
+            ],
+          ),
+        ),
+        // 删除消息
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: const [
+              Icon(Icons.delete, size: 16, color: Colors.red),
+              SizedBox(width: 8),
+              Text('删除', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+        // 撤回消息（仅自己发送的消息，且在2分钟内）
+        if (isMine && message.canRecall(currentUserId ?? 0))
+          PopupMenuItem(
+            value: 'recall',
+            child: Row(
+              children: const [
+                Icon(Icons.undo, size: 16),
+                SizedBox(width: 8),
+                Text('撤回'),
+              ],
+            ),
+          ),
+      ],
+    ).then((value) {
+      if (value != null) {
+        switch (value) {
+          case 'copy':
+            onCopy?.call();
+            break;
+          case 'quote':
+            onQuote?.call();
+            break;
+          case 'delete':
+            onDelete?.call();
+            break;
+          case 'recall':
+            onRecall?.call();
+            break;
+        }
+      }
+    });
   }
 
   Widget _buildAvatar() {
@@ -244,19 +330,64 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    Widget contentWidget;
+
     switch (message.msgType) {
       case MessageType.text:
-        return Text(
+        contentWidget = Text(
           message.content,
           style: const TextStyle(fontSize: 16, color: Colors.black87),
         );
+        break;
       case MessageType.image:
-        return _buildImageContent();
+        contentWidget = _buildImageContent();
+        break;
       case MessageType.video:
-        return _buildVideoContent();
+        contentWidget = _buildVideoContent();
+        break;
       case MessageType.file:
-        return _buildFileContent();
+        contentWidget = _buildFileContent();
+        break;
     }
+
+    // 如果有引用消息，显示引用
+    if (message.quotedMsgId != null && message.quotedContent != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            margin: const EdgeInsets.only(bottom: 6),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF3A3A3A) : Colors.grey[100],
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.format_quote, color: Colors.grey, size: 14),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    message.quotedContent!, 
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white70 : Colors.grey[700],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          contentWidget,
+        ],
+      );
+    }
+
+    return contentWidget;
   }
 
   Widget _buildImageContent() {

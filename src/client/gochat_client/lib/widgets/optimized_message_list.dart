@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../models/message.dart';
@@ -18,6 +19,8 @@ class OptimizedMessageList extends StatefulWidget {
   final Function(Message)? onRecallMessage;
   final Function(Message)? onCopyMessage;
   final Function(Message)? onDeleteMessage;
+  final Function(Message)? onQuoteMessage;
+  final int? currentUserId;
 
   const OptimizedMessageList({
     Key? key,
@@ -29,6 +32,8 @@ class OptimizedMessageList extends StatefulWidget {
     this.onRecallMessage,
     this.onCopyMessage,
     this.onDeleteMessage,
+    this.onQuoteMessage,
+    this.currentUserId,
   }) : super(key: key);
 
   @override
@@ -62,24 +67,22 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
   void _setupScrollListener() {
     _scrollController.addListener(() {
       _performanceMonitor.startTimer('message_list_scroll');
-
-      // 检查用户是否正在滚动
-      if (_scrollController.position.userScrollDirection !=
-              AxisDirection.down &&
-          _scrollController.position.userScrollDirection != AxisDirection.up) {
+      
+      // 检查用户是否正在滚动（通过检查滚动位置是否在变化）
+      if (_scrollController.position.isScrollingNotifier.value) {
         _isScrolling = true;
       }
-
+      
       // 当滚动到顶部附近时触发加载更多
-      if (_scrollController.position.pixels <= 100 &&
-          !_isLoadingMore &&
+      if (_scrollController.position.pixels <= 100 && 
+          !_isLoadingMore && 
           widget.onLoadMore != null) {
         _loadMore();
       }
-
+      
       // 检查是否需要预加载
       _checkPreloadTrigger();
-
+      
       // 延迟结束计时
       Future.delayed(const Duration(milliseconds: 50), () {
         _performanceMonitor.endTimer('message_list_scroll');
@@ -92,7 +95,7 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
     final messages = chatProvider.getMessages(widget.conversationId) ?? [];
     final currentPage = chatProvider.getCurrentPage(widget.conversationId);
     final hasMore = chatProvider.hasMoreMessages(widget.conversationId);
-
+    
     if (_lazyLoadingManager.shouldPreload(
       conversationId: widget.conversationId,
       currentMessageCount: messages.length,
@@ -106,7 +109,7 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
   void _triggerPreload() {
     final chatProvider = context.read<ChatProvider>();
     final currentPage = chatProvider.getCurrentPage(widget.conversationId);
-
+    
     _lazyLoadingManager.preloadMessages(
       conversationId: widget.conversationId,
       currentPage: currentPage,
@@ -117,9 +120,9 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
 
   Future<void> _loadMore() async {
     if (_isLoadingMore) return;
-
+    
     setState(() => _isLoadingMore = true);
-
+    
     try {
       await widget.onLoadMore?.call();
     } finally {
@@ -132,22 +135,21 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
   void scrollToBottom({bool animated = true, bool force = false}) {
     // 如果用户正在滚动，不要自动滚动到底部（除非强制）
     if (_isScrolling && !force) return;
-
+    
     if (!_scrollController.hasClients) return;
-
+    
     // 添加一个小延迟确保widget已经构建完成
     Future.delayed(Duration.zero, () {
       if (!_scrollController.hasClients) return;
-
-      // 由于ListView的reverse=true，最新消息在底部，所以滚动到0.0就是滚动到底部
+      
       if (animated) {
         _scrollController.animateTo(
-          0.0,
+          _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       } else {
-        _scrollController.jumpTo(0.0);
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     });
   }
@@ -155,7 +157,7 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-
+    
     return Consumer3<ChatProvider, UserProvider, GroupProvider>(
       builder: (context, chatProvider, userProvider, groupProvider, child) {
         final messages = chatProvider.getMessages(widget.conversationId) ?? [];
@@ -174,8 +176,9 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
         return NotificationListener<UserScrollNotification>(
           onNotification: (notification) {
             // 当用户停止滚动时，重置滚动状态
-            if (notification.direction.index == 0) {
-              // 0 is the index for ScrollDirection.idle
+            // 使用 notification.direction 的字符串表示来判断
+            final directionStr = notification.direction.toString();
+            if (directionStr.contains('idle')) {
               Future.delayed(const Duration(milliseconds: 100), () {
                 if (mounted) {
                   setState(() {
@@ -209,8 +212,7 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
                         )
                       : Text(
                           '上拉加载更多',
-                          style:
-                              TextStyle(color: Colors.grey[600], fontSize: 12),
+                          style: TextStyle(color: Colors.grey[600], fontSize: 12),
                         ),
                 );
               }
@@ -226,8 +228,7 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
                 final members = groupProvider.getGroupMembers(widget.groupId!);
                 if (members != null) {
                   try {
-                    final sender =
-                        members.firstWhere((m) => m.id == message.fromUserId);
+                    final sender = members.firstWhere((m) => m.id == message.fromUserId);
                     senderNickname = sender.nickname;
                   } catch (e) {
                     senderNickname = '用户${message.fromUserId}';
@@ -244,6 +245,19 @@ class OptimizedMessageListState extends State<OptimizedMessageList>
                 onRetry: message.status == MessageStatus.failed && isMine
                     ? () => widget.onRetryMessage?.call(message)
                     : null,
+                onRecall: widget.onRecallMessage != null
+                    ? () => widget.onRecallMessage?.call(message)
+                    : null,
+                onCopy: widget.onCopyMessage != null
+                    ? () => widget.onCopyMessage?.call(message)
+                    : null,
+                onDelete: widget.onDeleteMessage != null
+                    ? () => widget.onDeleteMessage?.call(message)
+                    : null,
+                onQuote: widget.onQuoteMessage != null
+                    ? () => widget.onQuoteMessage?.call(message)
+                    : null,
+                currentUserId: widget.currentUserId,
               );
             },
           ),
@@ -260,6 +274,11 @@ class MessageBubbleWrapper extends StatelessWidget {
   final bool isGroupChat;
   final String? senderNickname;
   final VoidCallback? onRetry;
+  final VoidCallback? onRecall;
+  final VoidCallback? onCopy;
+  final VoidCallback? onDelete;
+  final VoidCallback? onQuote;
+  final int? currentUserId;
 
   const MessageBubbleWrapper({
     Key? key,
@@ -268,6 +287,11 @@ class MessageBubbleWrapper extends StatelessWidget {
     required this.isGroupChat,
     this.senderNickname,
     this.onRetry,
+    this.onRecall,
+    this.onCopy,
+    this.onDelete,
+    this.onQuote,
+    this.currentUserId,
   }) : super(key: key);
 
   @override
@@ -278,6 +302,11 @@ class MessageBubbleWrapper extends StatelessWidget {
       isGroupChat: isGroupChat,
       senderNickname: senderNickname,
       onRetry: onRetry,
+      onRecall: onRecall,
+      onCopy: onCopy,
+      onDelete: onDelete,
+      onQuote: onQuote,
+      currentUserId: currentUserId,
     );
   }
 }

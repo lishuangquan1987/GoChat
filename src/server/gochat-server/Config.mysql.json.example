@@ -1,0 +1,28 @@
+{
+    "DBType": "mysql",
+    "ConnectionString": "root:123456@tcp(localhost:3306)/gochat?charset=utf8mb4&parseTime=True&loc=Local",
+    "DBPool": {
+        "MaxOpenConns": 50,
+        "MaxIdleConns": 25,
+        "ConnMaxLifetime": 600,
+        "ConnMaxIdleTime": 300
+    },
+    "MinIO": {
+        "Endpoint": "localhost:9000",
+        "AccessKey": "minioadmin",
+        "SecretKey": "minioadmin",
+        "BucketName": "gochat",
+        "UseSSL": false
+    },
+    "Server": {
+        "Port": "8080"
+    },
+    "Redka": {
+        "Enabled": true,
+        "Path": "./redka.db",
+        "CacheTTL": 600,
+        "HotDataTTL": 1800,
+        "MaxMemory": "256MB"
+    }
+}
+

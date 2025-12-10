@@ -32,6 +32,9 @@ class Message {
   MessageStatus status;
   final bool isRevoked;
   final DateTime? revokeTime;
+  final String? quotedMsgId;
+  final String? quotedContent;
+  final int? quotedFromUserId;
 
   Message({
     required this.msgId,
@@ -45,6 +48,9 @@ class Message {
     this.status = MessageStatus.sent,
     this.isRevoked = false,
     this.revokeTime,
+    this.quotedMsgId,
+    this.quotedContent,
+    this.quotedFromUserId,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -61,6 +67,9 @@ class Message {
       revokeTime: json['revokeTime'] != null
           ? DateTime.tryParse(json['revokeTime'] as String)
           : null,
+      quotedMsgId: json['quotedMsgId'] as String?,
+      quotedContent: json['quotedContent'] as String?,
+      quotedFromUserId: json['quotedFromUserId'] as int?,
     );
   }
 
@@ -76,6 +85,9 @@ class Message {
       'createTime': createTime.toIso8601String(),
       'isRevoked': isRevoked,
       'revokeTime': revokeTime?.toIso8601String(),
+      'quotedMsgId': quotedMsgId,
+      'quotedContent': quotedContent,
+      'quotedFromUserId': quotedFromUserId,
     };
   }
 

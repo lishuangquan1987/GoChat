@@ -18,13 +18,13 @@ func main() {
 	// 这里使用默认配置（输出到标准输出）
 	utils.Info("GoChat Server starting...")
 
-	// 运行数据库迁移
-	utils.Info("Running database migrations...")
-	if err := services.RunMigrations(); err != nil {
-		utils.Error("Database migration failed: %v", err)
+	// 使用 Ent 自动迁移同步数据库结构
+	utils.Info("Running Ent schema migration...")
+	if err := services.RunEntMigrations(); err != nil {
+		utils.Error("Ent schema migration failed: %v", err)
 		utils.Warn("继续运行，但某些功能可能不可用")
 	} else {
-		utils.Info("Database migrations completed successfully")
+		utils.Info("Ent schema migration completed successfully")
 	}
 
 	// 初始化 MinIO

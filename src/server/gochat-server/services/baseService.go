@@ -7,11 +7,12 @@ import (
 	"gochat_server/ent"
 	"gochat_server/utils"
 	"log"
-	"strings"
 	"time"
 
 	entsql "entgo.io/ent/dialect/sql"
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *ent.Client
@@ -36,94 +37,21 @@ func init() {
 		configs.Cfg.DBPool.MaxOpenConns, configs.Cfg.DBPool.MaxIdleConns)
 }
 
-// RunMigrations 运行数据库迁移
-func RunMigrations() error {
+// RunEntMigrations 使用 Ent 自动迁移功能同步数据库结构
+// 这会根据 Schema 定义自动创建或更新数据库表结构
+func RunEntMigrations() error {
 	ctx := context.Background()
 
-	// 检查并添加缺失的列到 users 表
-	sqlDB, err := sql.Open(configs.Cfg.DBType, configs.Cfg.ConnectionString)
-	if err != nil {
+	utils.Info("Running Ent schema migration...")
+
+	// 使用 Ent 的 Schema.Create 方法自动同步数据库结构
+	// 这会根据 ent/schema 目录下的定义自动创建或更新表结构
+	if err := db.Schema.Create(ctx); err != nil {
+		utils.Error("Ent schema migration failed: %v", err)
 		return err
 	}
-	defer sqlDB.Close()
 
-	// 添加新列（如果不存在）
-	migrations := []struct {
-		table  string
-		column string
-		sql    string
-	}{
-		{
-			table:  "users",
-			column: "avatar",
-			sql:    "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(255)",
-		},
-		{
-			table:  "users",
-			column: "signature",
-			sql:    "ALTER TABLE users ADD COLUMN IF NOT EXISTS signature VARCHAR(500)",
-		},
-		{
-			table:  "users",
-			column: "region",
-			sql:    "ALTER TABLE users ADD COLUMN IF NOT EXISTS region VARCHAR(100)",
-		},
-		{
-			table:  "users",
-			column: "birthday",
-			sql:    "ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday TIMESTAMP",
-		},
-		{
-			table:  "users",
-			column: "last_seen",
-			sql:    "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP",
-		},
-		{
-			table:  "users",
-			column: "status",
-			sql:    "ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'online'",
-		},
-		{
-			table:  "messages",
-			column: "is_revoked",
-			sql:    "ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_revoked BOOLEAN DEFAULT false",
-		},
-		{
-			table:  "messages",
-			column: "revoke_time",
-			sql:    "ALTER TABLE messages ADD COLUMN IF NOT EXISTS revoke_time TIMESTAMP",
-		},
-		{
-			table:  "friend_relationships",
-			column: "remark_name",
-			sql:    "ALTER TABLE friend_relationships ADD COLUMN IF NOT EXISTS remark_name VARCHAR(100)",
-		},
-		{
-			table:  "friend_relationships",
-			column: "category",
-			sql:    "ALTER TABLE friend_relationships ADD COLUMN IF NOT EXISTS category VARCHAR(50)",
-		},
-		{
-			table:  "friend_relationships",
-			column: "tags",
-			sql:    "ALTER TABLE friend_relationships ADD COLUMN IF NOT EXISTS tags TEXT",
-		},
-	}
-
-	for _, migration := range migrations {
-		if _, err := sqlDB.ExecContext(ctx, migration.sql); err != nil {
-			// PostgreSQL 的 IF NOT EXISTS 应该会处理列已存在的情况
-			// 但如果仍然出错，记录警告（可能是其他问题）
-			errMsg := strings.ToLower(err.Error())
-			if !strings.Contains(errMsg, "already exists") &&
-				!strings.Contains(errMsg, "duplicate column name") {
-				// 只有真正的错误才记录
-				utils.Warn("Migration warning for %s.%s: %v", migration.table, migration.column, err)
-			}
-		}
-	}
-
-	utils.Info("Database migrations completed")
+	utils.Info("Ent schema migration completed successfully")
 	return nil
 }
 
